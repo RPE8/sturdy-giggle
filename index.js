@@ -1,13 +1,16 @@
 import Sturdy from "./sturdy-giggle.js";
 import SturdyDataGenerator from "./sturdy-data-generator.js";
 
-const data = new SturdyDataGenerator().generateData();
-const rowCount = 10;
-const rowHeight = 30;
+const rowsCount = 30;
+const columnsCount = 30;
+
+const data = new SturdyDataGenerator({ rowsCount, columnsCount }).generateData();
+
+const rowHeight = 50;
 
 const sturdy = new Sturdy({
-	parent: document.querySelector(".sturdy-container"),
-	rowCount: 10,
+	container: document.querySelector(".sturdy-container"),
+	rowCount: rowsCount,
 	rowHeight: rowHeight,
 	columns: data,
 	cellRenderer: ({ columnIndex, rowIndex, key, inlineStyle, classes, column } = {}) => {

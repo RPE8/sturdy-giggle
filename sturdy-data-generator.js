@@ -1,9 +1,9 @@
 import SturdyColumn from "./sturdy-column.js";
 
 class SturdyColumnsGenerator {
-	constructor() {
-		this.columnsCount = 10;
-		this.rowsCount = 10;
+	constructor({ rowsCount, columnsCount }) {
+		this.columnsCount = columnsCount;
+		this.rowsCount = rowsCount;
 	}
 
 	generateData() {
@@ -43,7 +43,7 @@ class SturdyColumnsGenerator {
 					inlineStyleAccessor,
 					attributeAccessor,
 					key: i,
-					width: 50,
+					width: 120,
 					widthUnits: "px",
 					renderer: ({ rowIndex, columnIndex }) => {
 						return `<div>${dataAccessor({ rowIndex, columnIndex })}</div>`;

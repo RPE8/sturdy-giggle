@@ -1,20 +1,35 @@
 class Sturdy {
-	constructor({ parent, rowHeight, rowCount, cellRenderer, columns } = {}) {
-		this.parent = parent;
-		this.container = undefined;
+	constructor({ container, rowHeight, rowCount, cellRenderer, columns } = {}) {
+		this.container = container;
+		this.containerHeight = container.offsetHeight;
 		this.rowHeight = rowHeight;
 		this.rowCount = rowCount;
+
+		this.totalRowsHeight = this.rowCount * this.rowHeight;
+
+		this.rowsInViewport = Math.ceil(this.containerHeight / this.rowHeight);
+
+		this.treshold = 2;
+
+		this.tresholdPadding = this.treshold * this.rowHeight;
+
 		this.cellRenderer = cellRenderer;
 		this.columns = columns;
 
 		this.currentLeft = 0;
 		this.currentTop = 0;
+
+		this.scrollTop = 0;
 	}
 
 	render() {
-		const container = (this.container = document.createElement("div"));
-		container.setAttribute("style", "position: relative; width:100%; height: 100%;");
-		this.parent.append(container);
+		const container = this.container;
+
+		container.addEventListener("scroll", (event) => {
+			console.log(event.target.scrollTop);
+			this.scrollTop = event.target.scrollTop;
+		});
+
 		let html = "";
 		let rowIndex = 0;
 		let topForRow = this.currentTop;
@@ -22,7 +37,7 @@ class Sturdy {
 			let leftForRow = this.currentLeft;
 
 			this.columns.forEach((column, columnIndex) => {
-				let inlineStyle = `left: ${leftForRow}${column.widthUnits}; top:${topForRow}px; position: absolute; display: flex`;
+				let inlineStyle = `max-width:${column.width}px ;left: ${leftForRow}${column.widthUnits}; top:${topForRow}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
 				html += this.cellRenderer({ rowIndex, columnIndex, column, inlineStyle });
 				leftForRow += column.width;
 			});
@@ -31,6 +46,10 @@ class Sturdy {
 		}
 		container.innerHTML += html;
 	}
+
+	renderColumn(column) {}
+
+	renderRow(rowIndex) {}
 }
 
 export default Sturdy;
