@@ -46,7 +46,9 @@ class SturdyColumnsGenerator {
 					width: 120,
 					widthUnits: "px",
 					renderer: ({ rowIndex, columnIndex }) => {
-						return `<div>${dataAccessor({ rowIndex, columnIndex })}</div>`;
+						const cell = document.createElement("div");
+						cell.textContent = dataAccessor({ rowIndex, columnIndex });
+						return cell;
 					},
 				})
 			);

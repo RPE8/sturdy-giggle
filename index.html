@@ -16,6 +16,10 @@
 		</style>
 	</head>
 	<body>
-		<main><div class="sturdy-container" style="position: relative; width: 800px; height: 800px; box-sizing: border-box"></div></main>
+		<!-- TODO: .sturdy-container should be staticaly created on the page,
+									then div inside of it must be automatically created -->
+		<main style="position: relative; width: 800px; height: 800px; box-sizing: border-box; overflow: auto">
+			<div class="sturdy-container" style="position: relative; width: 800px; height: 800px; box-sizing: border-box"></div>
+		</main>
 	</body>
 </html>

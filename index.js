@@ -14,11 +14,14 @@ const sturdy = new Sturdy({
 	rowHeight: rowHeight,
 	columns: data,
 	cellRenderer: ({ columnIndex, rowIndex, key, inlineStyle, classes, column } = {}) => {
-		return `
-				<div data-key="${key}" style="${inlineStyle}" class="${classes}">
-					${column.renderer({ columnIndex, rowIndex })}
-				</div>
-			`;
+		const cellContainer = document.createElement("div");
+		if (key) cellContainer.setAttribute("data-key", key);
+		if (classes) cellContainer.classList("class", ...classes);
+		if (inlineStyle) cellContainer.setAttribute("style", inlineStyle);
+
+		const content = column.renderer({ columnIndex, rowIndex });
+		cellContainer.append(content);
+		return cellContainer;
 	},
 });
 
