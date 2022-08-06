@@ -1,0 +1,23 @@
+{
+  "name": "sturdy-giggle",
+  "version": "1.0.0",
+  "description": "Virtual Table",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RPE8/sturdy-giggle.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RPE8/sturdy-giggle/issues"
+  },
+  "homepage": "https://github.com/RPE8/sturdy-giggle#readme",
+  "devDependencies": {
+    "eslint": "^8.21.0",
+    "prettier": "^2.7.1"
+  }
+}
