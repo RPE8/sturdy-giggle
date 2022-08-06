@@ -42,7 +42,7 @@ class Sturdy {
 		const container = this.container;
 		container.style.height = this.rowHeight * this.rowCount + "px";
 		// const throttledScroll = this.throttleFunction(, 170);
-		const throttledScroll = this.throttleFunction(this.onScroll.bind(this), 70);
+		const throttledScroll = this.throttleFunction(this.onScroll.bind(this), 17);
 		container.parentNode.addEventListener("scroll", throttledScroll);
 
 		for (let i = 0; i < this.rowsInViewport + this.treshold; i++) {
@@ -71,7 +71,6 @@ class Sturdy {
 	}
 
 	setScrollTop(scrollTop) {
-		console.log("setScroll");
 		const rowNumber = this.calcRowNumberByScrollTop(scrollTop);
 		// console.log(rowNumber, this.firstVisibleRowIndex + this.rowsInViewport);
 		if (
@@ -80,13 +79,12 @@ class Sturdy {
 		) {
 			this.container.replaceChildren();
 			const rowsUpTo = rowNumber + this.rowsInViewport;
-			for (let i = rowNumber; i <= rowsUpTo; i++) {
+			for (let i = rowNumber; i < rowsUpTo; i++) {
 				this.renderRow(i);
 			}
 		} else if (rowNumber > this.firstVisibleRowIndex) {
 			const diff = rowNumber - this.firstVisibleRowIndex;
 			if (diff === 0) return;
-
 			for (let i = 0; i < diff; i++) {
 				for (let j = 0; j < this.columnsCount; j++) {
 					this.container.firstChild.remove();
@@ -95,7 +93,6 @@ class Sturdy {
 			}
 		} else if (rowNumber < this.firstVisibleRowIndex) {
 			const diff = Math.abs(this.firstVisibleRowIndex - rowNumber);
-
 			for (let i = 0; i < diff; i++) {
 				for (let j = 0; j < this.columnsCount; j++) {
 					this.container.lastChild.remove();
@@ -122,7 +119,7 @@ class Sturdy {
 		let topPadding = this.rowHeight * rowIndex;
 		let row = [];
 		columns.forEach((column, columnIndex) => {
-			let inlineStyle = `max-width:${column.width}px ;left: ${leftPadding}${column.widthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
+			let inlineStyle = `height:${this.rowHeight}px;max-width:${column.width}px ;left: ${leftPadding}${column.widthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
 			row.push(this.cellRenderer({ rowIndex, columnIndex, column, inlineStyle }));
 			leftPadding += column.width;
 		});

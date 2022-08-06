@@ -14,7 +14,11 @@ class SturdyColumnsGenerator {
 		};
 
 		const classAccessor = function ({ rowIndex, columnIndex }) {
-			return this.key;
+			const classes = [`Row-${rowIndex}`, `Column-${columnIndex}`, "Row", "Column", "Input"];
+			if (rowIndex % 2 === 0) {
+				classes.push("Even");
+			}
+			return classes;
 		};
 
 		const inlineStyleAccessor = function ({ rowIndex, columnIndex }) {
@@ -46,9 +50,18 @@ class SturdyColumnsGenerator {
 					width: 120,
 					widthUnits: "px",
 					renderer: ({ rowIndex, columnIndex }) => {
-						const cell = document.createElement("div");
-						cell.textContent = dataAccessor({ rowIndex, columnIndex });
-						return cell;
+						let element;
+						if (rowIndex % 2 === 0 && columnIndex % 2 === 0) {
+							element = document.createElement("input");
+							element.value = dataAccessor({ rowIndex, columnIndex });
+						} else {
+							element = document.createElement("div");
+							element.textContent = "Hello";
+						}
+
+						const classes = classAccessor({ rowIndex, columnIndex });
+						element.classList.add(...classes);
+						return element;
 					},
 				})
 			);
