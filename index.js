@@ -1,8 +1,8 @@
 import Sturdy from "./sturdy-giggle.js";
 import SturdyDataGenerator from "./sturdy-data-generator.js";
 
-const rowsCount = 30;
-const columnsCount = 30;
+const rowsCount = 600;
+const columnsCount = 4;
 
 const data = new SturdyDataGenerator({ rowsCount, columnsCount }).generateData();
 
