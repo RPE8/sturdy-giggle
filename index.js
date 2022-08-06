@@ -6,7 +6,7 @@ const rowCount = 10;
 const rowHeight = 30;
 
 const sturdy = new Sturdy({
-	parent: {},
+	parent: document.querySelector(".sturdy-container"),
 	rowCount: 10,
 	rowHeight: rowHeight,
 	columns: data,

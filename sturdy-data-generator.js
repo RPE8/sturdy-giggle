@@ -43,6 +43,8 @@ class SturdyColumnsGenerator {
 					inlineStyleAccessor,
 					attributeAccessor,
 					key: i,
+					width: 50,
+					widthUnits: "px",
 					renderer: ({ rowIndex, columnIndex }) => {
 						return `<div>${dataAccessor({ rowIndex, columnIndex })}</div>`;
 					},
