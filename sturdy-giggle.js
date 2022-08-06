@@ -156,7 +156,7 @@ class Sturdy {
 				// this.container.lastChild.remove();
 				// }
 				// console.log(rowNumber + i);
-				this.rowsMap.set(rowNumber + i, this.renderRow(rowNumber + i, false));
+				this.rowsMap.set(rowNumber + i, this.renderRow(rowNumber + i));
 			}
 			// console.groupEnd("deleted");
 			// console.groupEnd("partial up");
