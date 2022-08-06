@@ -26,25 +26,14 @@ class Sturdy {
 	}
 
 	throttleFunction(func, delay) {
-		// Previously called time of the function
 		let prev = 0;
 		return (...args) => {
-			// Current called time of the function
 			let now = new Date().getTime();
-
-			// Logging the difference between previously
-			// called and current called timings
-			console.log(now - prev, delay);
-
-			// If difference is greater than delay call
-			// the function again.
 			if (now - prev > delay) {
 				prev = now;
-
-				// "..." is the spread operator here
-				// returning the function with the
-				// array of arguments
 				return func(...args);
+			} else {
+				console.log("t");
 			}
 		};
 	}
@@ -53,7 +42,8 @@ class Sturdy {
 		const container = this.container;
 		container.style.height = this.rowHeight * this.rowCount + "px";
 		// const throttledScroll = this.throttleFunction(, 170);
-		container.parentNode.addEventListener("scroll", this.onScroll.bind(this));
+		const throttledScroll = this.throttleFunction(this.onScroll.bind(this), 70);
+		container.parentNode.addEventListener("scroll", throttledScroll);
 
 		for (let i = 0; i < this.rowsInViewport + this.treshold; i++) {
 			this.renderRow(i);
@@ -63,17 +53,17 @@ class Sturdy {
 	}
 
 	onScroll(event) {
-		const newScroll = event.target.scrollTop;
-		if (newScroll > this.scrollTop) {
-			// console.log("Down");
-			// requestAnimationFrame(() => {
-			this.setScrollTop(newScroll);
-			// });
-		} else if (newScroll < this.scrollTop) {
-			console.log("Up");
+		const newTopScroll = event.target.scrollTop;
+		if (newTopScroll !== this.scrollTop) {
+			this.setScrollTop(newTopScroll);
+			return;
 		}
 
-		this.scrollTop = event.target.scrollTop;
+		const newLeftScroll = event.target.scrollLeft;
+		if (newLeftScroll !== this.scrollTop) {
+			console.log("Left");
+			return;
+		}
 	}
 
 	calcRowNumberByScrollTop(scrollTop) {
@@ -81,37 +71,38 @@ class Sturdy {
 	}
 
 	setScrollTop(scrollTop) {
+		console.log("setScroll");
 		const rowNumber = this.calcRowNumberByScrollTop(scrollTop);
 		// console.log(rowNumber, this.firstVisibleRowIndex + this.rowsInViewport);
-		if (rowNumber >= this.firstVisibleRowIndex + this.rowsInViewport) {
-			console.groupCollapsed("full redraw");
+		if (
+			rowNumber >= this.firstVisibleRowIndex + this.rowsInViewport ||
+			rowNumber <= this.firstVisibleRowIndex - this.rowsInViewport
+		) {
 			this.container.replaceChildren();
-			const rowsUpTo = rowNumber + this.rowsInViewport - 1;
-			console.log("rowsUpTo:", rowsUpTo);
-			console.log("rowNumber", rowNumber);
-			console.log("fisrtVisible", this.firstVisibleRowIndex);
-			console.log("rowsInViewport", this.rowsInViewport);
+			const rowsUpTo = rowNumber + this.rowsInViewport;
 			for (let i = rowNumber; i <= rowsUpTo; i++) {
-				console.log(i);
 				this.renderRow(i);
 			}
-			console.groupEnd("full redraw");
-		} else {
+		} else if (rowNumber > this.firstVisibleRowIndex) {
 			const diff = rowNumber - this.firstVisibleRowIndex;
 			if (diff === 0) return;
 
-			console.groupCollapsed("redraw");
-			console.log("rowNumber", rowNumber);
-			console.log("fisrtVisible", this.firstVisibleRowIndex);
-			console.log("rowsInViewport", this.rowsInViewport);
 			for (let i = 0; i < diff; i++) {
 				for (let j = 0; j < this.columnsCount; j++) {
 					this.container.firstChild.remove();
 				}
-				console.log(this.firstVisibleRowIndex + (this.rowsInViewport - 1) + i);
-				this.renderRow(this.firstVisibleRowIndex + (this.rowsInViewport - 1) + i);
+				this.renderRow(this.firstVisibleRowIndex + this.rowsInViewport + i);
 			}
-			console.groupEnd("redraw");
+		} else if (rowNumber < this.firstVisibleRowIndex) {
+			const diff = Math.abs(this.firstVisibleRowIndex - rowNumber);
+
+			for (let i = 0; i < diff; i++) {
+				for (let j = 0; j < this.columnsCount; j++) {
+					this.container.lastChild.remove();
+				}
+
+				this.renderRow(rowNumber + i, false);
+			}
 		}
 		this.firstVisibleRowIndex = rowNumber;
 		this.scrollTop = scrollTop;
@@ -121,7 +112,8 @@ class Sturdy {
 
 	removeRow(rowIndex) {}
 
-	renderRow(rowIndex) {
+	// bLast - last element in Dom or first
+	renderRow(rowIndex, bLast = true) {
 		if (rowIndex < 0 || rowIndex >= this.rowCount) {
 			return;
 		}
@@ -134,7 +126,11 @@ class Sturdy {
 			row.push(this.cellRenderer({ rowIndex, columnIndex, column, inlineStyle }));
 			leftPadding += column.width;
 		});
-		this.container.append(...row);
+		if (bLast) {
+			this.container.append(...row);
+		} else {
+			this.container.prepend(...row);
+		}
 	}
 }
 
