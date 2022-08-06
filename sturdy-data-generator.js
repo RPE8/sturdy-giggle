@@ -51,13 +51,13 @@ class SturdyColumnsGenerator {
 					widthUnits: "px",
 					renderer: ({ rowIndex, columnIndex }) => {
 						let element;
-						if (rowIndex % 2 === 0 && columnIndex % 2 === 0) {
-							element = document.createElement("input");
-							element.value = dataAccessor({ rowIndex, columnIndex });
-						} else {
-							element = document.createElement("div");
-							element.textContent = "Hello";
-						}
+						// if (rowIndex % 2 === 0 && columnIndex % 2 === 0) {
+						// 	element = document.createElement("input");
+						// 	element.value = dataAccessor({ rowIndex, columnIndex });
+						// } else {
+						element = document.createElement("div");
+						element.textContent = dataAccessor({ rowIndex, columnIndex });
+						// }
 
 						const classes = classAccessor({ rowIndex, columnIndex });
 						element.classList.add(...classes);

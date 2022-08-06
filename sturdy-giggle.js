@@ -25,31 +25,49 @@ class Sturdy {
 
 		this.firstVisibleRowIndex = 0;
 
+		this.rowsMap = new Map();
+
 		this.scrollTop = 0;
 	}
 
-	throttleFunction(func, delay) {
-		let prev = 0;
-		return (...args) => {
-			let now = new Date().getTime();
-			if (now - prev > delay) {
-				prev = now;
-				return func(...args);
-			} else {
-				console.log("t");
+	throttleFunction(func, ms) {
+		let isThrottled = false,
+			savedArgs,
+			savedThis;
+
+		function wrapper() {
+			if (isThrottled) {
+				// (2)
+				savedArgs = arguments;
+				savedThis = this;
+				return;
 			}
-		};
+
+			func.apply(this, arguments); // (1)
+
+			isThrottled = true;
+
+			setTimeout(function () {
+				isThrottled = false; // (3)
+				if (savedArgs) {
+					wrapper.apply(savedThis, savedArgs);
+					savedArgs = savedThis = null;
+				}
+			}, ms);
+		}
+
+		return wrapper;
 	}
 
 	render() {
 		const container = this.container;
 		container.style.height = this.rowHeight * this.rowCount + "px";
 		// const throttledScroll = this.throttleFunction(, 170);
-		const throttledScroll = this.throttleFunction(this.onScroll.bind(this), 0);
+		const throttledScroll = this.throttleFunction(this.onScroll.bind(this), 17);
 		container.parentNode.addEventListener("scroll", throttledScroll);
-
+		this.rowsMap = new Map();
 		for (let i = 0; i < this.rowsInViewport + this.treshold; i++) {
-			this.renderRow(i);
+			this.rowsMap.set(i, this.renderRow(i));
 		}
 
 		this.firstVisibleRowIndex = 0;
@@ -80,32 +98,81 @@ class Sturdy {
 			rowNumber >= this.firstVisibleRowIndex + this.rowsInViewport ||
 			rowNumber <= this.firstVisibleRowIndex - this.rowsInViewport
 		) {
+			this.rowsMap = new Map();
 			this.container.replaceChildren();
+			// console.groupCollapsed("full");
+			// console.log("first visible", this.firstVisibleRowIndex);
+			// console.log("current", rowNumber);
 			const rowsUpTo = rowNumber + this.rowsInViewport;
 			for (let i = rowNumber; i < rowsUpTo; i++) {
-				this.renderRow(i);
+				this.rowsMap.set(i, this.renderRow(i));
 			}
+			// console.groupEnd("full");
 		} else if (rowNumber > this.firstVisibleRowIndex) {
 			const diff = rowNumber - this.firstVisibleRowIndex;
 			if (diff === 0) return;
+			// console.groupCollapsed("partial dowm");
+			// console.log("first visible", this.firstVisibleRowIndex);
+			// console.log("current", rowNumber);
 			for (let i = 0; i < diff; i++) {
-				for (let j = 0; j < this.columnsCount; j++) {
-					this.container.firstChild.remove();
+				if (this.rowsMap.has(this.firstVisibleRowIndex + i)) {
+					// console.log(`Yes ${this.firstVisibleRowIndex + i}`);
+					const rows = this.rowsMap.get(this.firstVisibleRowIndex + i);
+					rows.forEach((elem) => elem.remove());
 				}
-				this.renderRow(this.firstVisibleRowIndex + this.rowsInViewport + i);
-			}
-		} else if (rowNumber < this.firstVisibleRowIndex) {
-			const diff = Math.abs(this.firstVisibleRowIndex - rowNumber);
-			for (let i = 0; i < diff; i++) {
-				for (let j = 0; j < this.columnsCount; j++) {
-					this.container.lastChild.remove();
-				}
+				// } else {
+				// 	console.log(`No ${this.firstVisibleRowIndex + i}`);
+				// }
+				// for (let j = 0; j < this.columnsCount; j++) {
 
-				this.renderRow(rowNumber + i, false);
+				// 	this.container.firstChild.remove();
+
+				// }
+				// console.log(this.firstVisibleRowIndex + this.rowsInViewport + i);
+				this.rowsMap.set(
+					this.firstVisibleRowIndex + this.rowsInViewport + i,
+					this.renderRow(this.firstVisibleRowIndex + this.rowsInViewport + i)
+				);
 			}
+			// console.groupEnd("partial dowm");
+		} else if (rowNumber < this.firstVisibleRowIndex) {
+			// console.groupCollapsed("partial up");
+			// console.log("first visible", this.firstVisibleRowIndex);
+			// console.log("current", rowNumber);
+			const diff = Math.abs(this.firstVisibleRowIndex - rowNumber);
+			// console.groupCollapsed("deleted");
+			for (let i = 0; i < diff; i++) {
+				// for (let j = 0; j < this.columnsCount; j++) {
+
+				if (this.rowsMap.has(this.firstVisibleRowIndex + this.rowsInViewport - 1 - i)) {
+					// console.log(`Yes ${this.firstVisibleRowIndex + this.rowsInViewport - 1 - i}`);
+					const rows = this.rowsMap.get(this.firstVisibleRowIndex + this.rowsInViewport - 1 - i);
+					rows.forEach((elem) => elem.remove());
+				}
+				// } else {
+				// 	console.log(`No ${this.firstVisibleRowIndex + this.rowsInViewport - 1 - i}`);
+				// }
+
+				// this.container.lastChild.remove();
+				// }
+				// console.log(rowNumber + i);
+				this.rowsMap.set(rowNumber + i, this.renderRow(rowNumber + i, false));
+			}
+			// console.groupEnd("deleted");
+			// console.groupEnd("partial up");
 		}
 		this.firstVisibleRowIndex = rowNumber;
 		this.scrollTop = scrollTop;
+		// let obj = {};
+		// document.querySelectorAll(".Input").forEach((elem) => {
+		// 	if (!obj[elem.textContent]) obj[elem.textContent] = 0;
+		// 	obj[elem.textContent]++;
+		// });
+		// for (let [prop, value] of Object.entries(obj)) {
+		// 	if (value && value > 1) {
+		// 		console.error({ prop, value });
+		// 	}
+		// }
 	}
 
 	renderColumn(column) {}
@@ -131,6 +198,7 @@ class Sturdy {
 		} else {
 			this.container.prepend(...row);
 		}
+		return row;
 	}
 }
 
