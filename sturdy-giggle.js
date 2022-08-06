@@ -1,3 +1,6 @@
+// TODO: 	Add treshold
+//  			Add rowHeightUnits
+
 class Sturdy {
 	constructor({ container, rowHeight, rowCount, cellRenderer, columns } = {}) {
 		this.container = container;
@@ -7,9 +10,9 @@ class Sturdy {
 
 		this.totalRowsHeight = this.rowCount * this.rowHeight;
 
-		this.rowsInViewport = Math.floor(this.containerHeight / this.rowHeight);
-
 		this.treshold = 0;
+
+		this.rowsInViewport = Math.floor(this.containerHeight / this.rowHeight);
 
 		this.tresholdPadding = this.treshold * this.rowHeight;
 
@@ -42,7 +45,7 @@ class Sturdy {
 		const container = this.container;
 		container.style.height = this.rowHeight * this.rowCount + "px";
 		// const throttledScroll = this.throttleFunction(, 170);
-		const throttledScroll = this.throttleFunction(this.onScroll.bind(this), 17);
+		const throttledScroll = this.throttleFunction(this.onScroll.bind(this), 0);
 		container.parentNode.addEventListener("scroll", throttledScroll);
 
 		for (let i = 0; i < this.rowsInViewport + this.treshold; i++) {
