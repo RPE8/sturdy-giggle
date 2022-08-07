@@ -2,15 +2,18 @@
 //  			Add rowHeightUnits
 
 class Sturdy {
-	constructor({ container, rowHeight, rowCount, cellRenderer, columns } = {}) {
+	constructor({ container, rowHeight, rowCount, columnsCount, cellRenderer, columns } = {}) {
 		this.container = container;
 		this.containerHeight = container.offsetHeight;
+		this.containerWidth = container.offsetWidth;
 		this.rowHeight = rowHeight;
 		this.rowCount = rowCount;
 
 		this.totalRowsHeight = this.rowCount * this.rowHeight;
 
 		this.treshold = 0;
+		this.rowsTreshold = 0;
+		this.columnsTreshold = 0;
 
 		this.rowsInViewport = Math.floor(this.containerHeight / this.rowHeight);
 
@@ -62,6 +65,10 @@ class Sturdy {
 	render() {
 		const container = this.container;
 		container.style.height = this.rowHeight * this.rowCount + "px";
+		container.style.width = this.columns.reduce((width, column) => {
+			width += column.width;
+			return width;
+		}, 0);
 		// const throttledScroll = this.throttleFunction(, 170);
 		const throttledScroll = this.throttleFunction(this.onScroll.bind(this), 17);
 		container.parentNode.addEventListener("scroll", throttledScroll);
