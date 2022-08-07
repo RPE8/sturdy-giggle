@@ -42,7 +42,7 @@ class SturdyColumnsGenerator {
 		for (let i = 0; i < this.columnsCount; i++) {
 			let nested = [];
 			let totalWidth = 0;
-			let classAccessor = function ({ rowIndex, columnIndex }) {
+			const classAccessor = function ({ rowIndex, columnIndex }) {
 				let classes = [];
 
 				if (columnIndex % 2 === 0) {
@@ -56,6 +56,9 @@ class SturdyColumnsGenerator {
 				}
 				return classes;
 			};
+			const dataAccessor = function ({ rowIndex, columnIndex, mainColumnIndex }) {
+				return data[rowIndex][columnIndex] + "MC:" + mainColumnIndex;
+			};
 			for (let j = 0; j < 7; j++) {
 				totalWidth += 120;
 				nested.push(
@@ -67,14 +70,14 @@ class SturdyColumnsGenerator {
 						key: i,
 						width: 120,
 						widthUnits: "px",
-						renderer: ({ rowIndex, columnIndex }) => {
+						renderer: ({ rowIndex, columnIndex, mainColumnIndex }) => {
 							let element;
 							// if (rowIndex % 2 === 0 && columnIndex % 2 === 0) {
 							// 	element = document.createElement("input");
 							// 	element.value = dataAccessor({ rowIndex, columnIndex });
 							// } else {
 							element = document.createElement("div");
-							element.textContent = dataAccessor({ rowIndex, columnIndex });
+							element.textContent = dataAccessor({ rowIndex, columnIndex, mainColumnIndex });
 							// }
 
 							const classes = classAccessor({ rowIndex, columnIndex });
@@ -93,7 +96,7 @@ class SturdyColumnsGenerator {
 					renderer: function ({ rowIndex, columnIndex }) {
 						let elements = [];
 						this.nested.forEach((column, i) => {
-							elements.push(column.renderer({ rowIndex, columnIndex: i }));
+							elements.push(column.renderer({ rowIndex, columnIndex: i, mainColumnIndex: columnIndex }));
 						});
 
 						return elements;
