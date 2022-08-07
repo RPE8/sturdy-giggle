@@ -2,7 +2,6 @@
 //  			Add rowHeightUnits
 // 				Move all this. props to constructor
 // 				Instead of filter use Binary search
-// 				rendered* (renderedInfo) -> rendering
 //  			clear vars on render
 
 class Sturdy {
@@ -33,6 +32,10 @@ class Sturdy {
 
 		this.cellsMap = new Map();
 		this.renderedColumnsMap = new Map();
+		this.columnRenderingInfo = new Map();
+		this.columnRenderingInfoMap = new Map();
+		this.columnRenderingInfoKeys = [];
+		this.totalColumnsWidth = 0;
 
 		this.scrollTop = 0;
 		this.scrollLeft = 0;
@@ -68,7 +71,7 @@ class Sturdy {
 
 	computeColumnsRenderInfo(columns) {
 		let totalWidth = 0;
-		const renderedInfo = columns.reduce((acc, curr, i) => {
+		const renderingInfo = columns.reduce((acc, curr, i) => {
 			let obj = {
 				start: totalWidth,
 				end: totalWidth + curr.width,
@@ -79,17 +82,17 @@ class Sturdy {
 			return acc;
 		}, []);
 
-		const renderedInfoMap = new Map();
-		const renderedInfoKeys = [];
-		renderedInfo.forEach((info) => {
-			renderedInfoMap.set(info.start, info);
-			renderedInfoKeys.push(info.start);
+		const renderingInfoMap = new Map();
+		const renderingInfoKeys = [];
+		renderingInfo.forEach((info) => {
+			renderingInfoMap.set(info.start, info);
+			renderingInfoKeys.push(info.start);
 		});
 
 		return {
-			renderedInfo,
-			renderedInfoMap,
-			renderedInfoKeys,
+			renderingInfo,
+			renderingInfoMap,
+			renderingInfoKeys,
 			totalWidth,
 		};
 	}
@@ -117,11 +120,13 @@ class Sturdy {
 
 	render() {
 		const container = this.container;
-		const { renderedInfo, renderedInfoMap, renderedInfoKeys, totalWidth } = this.computeColumnsRenderInfo(this.columns);
-		this.renderedInfo = renderedInfo;
-		this.renderedInfoMap = renderedInfoMap;
-		this.renderedInfoKeys = renderedInfoKeys;
-		this.totalWidth = totalWidth;
+		const { renderingInfo, renderingInfoMap, renderingInfoKeys, totalWidth } = this.computeColumnsRenderInfo(
+			this.columns
+		);
+		this.columnRenderingInfo = renderingInfo;
+		this.columnRenderingInfoMap = renderingInfoMap;
+		this.columnRenderingInfoKeys = renderingInfoKeys;
+		this.totalColumnsWidth = totalWidth;
 
 		this.cellsMap = new Map();
 		this.firstVisibleRowIndex = 0;
