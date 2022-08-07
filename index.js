@@ -16,7 +16,7 @@ const sturdy = new Sturdy({
 	cellRenderer: ({ columnIndex, rowIndex, key, inlineStyle, classes = ["cell"], column } = {}) => {
 		const cellContainer = document.createElement("div");
 		if (key) cellContainer.setAttribute("data-key", key);
-		if (classes) cellContainer.classList.add("class", ...classes);
+		if (classes) cellContainer.classList.add(...classes);
 		if (inlineStyle) cellContainer.setAttribute("style", inlineStyle);
 
 		const content = column.renderer({ columnIndex, rowIndex });

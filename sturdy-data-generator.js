@@ -42,6 +42,20 @@ class SturdyColumnsGenerator {
 		for (let i = 0; i < this.columnsCount; i++) {
 			let nested = [];
 			let totalWidth = 0;
+			let classAccessor = function ({ rowIndex, columnIndex }) {
+				let classes = [];
+
+				if (columnIndex % 2 === 0) {
+					classes = [...classes, ...["Even-Column", "Input"]];
+				} else {
+					classes = [...classes, ...["Odd-Column", "Input"]];
+				}
+
+				if (rowIndex % 2 === 0) {
+					classes.push("Even-Row");
+				}
+				return classes;
+			};
 			for (let j = 0; j < 7; j++) {
 				totalWidth += 120;
 				nested.push(
