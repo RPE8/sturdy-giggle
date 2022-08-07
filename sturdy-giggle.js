@@ -195,23 +195,17 @@ class Sturdy {
 		let leftPadding = this.currentLeft;
 		let topPadding = this.rowHeight * rowIndex;
 		let row = [];
-		let renderedColumns = {};
 		columns.forEach((column, columnIndex) => {
 			let inlineStyle = `height:${this.rowHeight}px;max-width:${column.width}px ;left: ${leftPadding}${column.widthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
 			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column, inlineStyle });
 
-			if (!renderedColumns[columnIndex]) {
-				renderedColumns[columnIndex] = [];
-			}
-
-			renderedColumns[columnIndex].push(renderedCell);
 			row.push(renderedCell);
 			leftPadding += column.width;
 		});
 
 		this.container.append(...row);
 
-		return { renderedColumns, row };
+		return { row };
 	}
 }
 
