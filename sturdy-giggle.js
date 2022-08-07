@@ -28,8 +28,7 @@ class Sturdy {
 
 		this.firstVisibleRowIndex = 0;
 
-		this.rowsMap = new Map();
-		this.columnsMap = new Map();
+		this.cellsMap = new Map();
 
 		this.scrollTop = 0;
 	}
@@ -85,17 +84,14 @@ class Sturdy {
 		// const throttledScroll = this.throttleFunction(, 170);
 		const throttledScroll = this.throttleFunction(this.onScroll.bind(this), 17);
 		container.parentNode.addEventListener("scroll", throttledScroll);
-		this.rowsMap = new Map();
-		this.columnsMap = new Map();
+		this.cellsMap = new Map();
 		for (let i = 0; i < this.rowsInViewport + this.treshold; i++) {
 			const rendered = this.renderRow(i, columnsToRender);
 
-			this.rowsMap.set(i, rendered.row);
-			this._addToColumnsMapByRenderedColumns(rendered.renderedColumns);
+			this.cellsMap.set(i, rendered.row);
 		}
 
-		console.table(this.columnsMap);
-		console.table(this.rowsMap);
+		console.table(this.cellsMap);
 		this.firstVisibleRowIndex = 0;
 	}
 
@@ -117,93 +113,47 @@ class Sturdy {
 		return Math.round(scrollTop / this.rowHeight);
 	}
 
-	_addToColumnsMapByRenderedColumns(renderedColumns) {
-		for (const [columnIndex, cells] of Object.entries(renderedColumns)) {
-			const columnsByIndex = this.columnsMap.get(columnIndex) || [];
-			columnsByIndex.push(cells);
-			this.columnsMap.set(columnIndex, columnsByIndex);
-		}
-	}
-
-	_removeFromColumnsMap(rowNumber) {
-		this.columnsMap.forEach((data, key) => {
-			this.columnsMap[key] = data.splice(1);
-		});
-		for (const [columnIndex, cells] of Object.entries(renderedColumns)) {
-			const columnsByIndex = this.columnsMap.get(columnIndex) || [];
-			columnsByIndex.push(cells);
-			this.columnsMap.set(columnIndex, columnsByIndex);
-		}
-	}
-
 	_fullRedrawOnScrollTop(rowNumber) {
-		this.rowsMap = new Map();
-		this.columnsMap = new Map();
+		this.cellsMap = new Map();
 		this.container.replaceChildren();
-		// console.groupCollapsed("full");
-		// console.log("first visible", this.firstVisibleRowIndex);
-		// console.log("current", rowNumber);
-
 		const rowsUpTo = rowNumber + this.rowsInViewport;
 		for (let i = rowNumber; i < rowsUpTo; i++) {
 			const rendered = this.renderRow(i);
-			this._addToColumnsMapByRenderedColumns(rendered.renderedColumns);
-			this.rowsMap.set(i, rendered.row);
+			this.cellsMap.set(i, rendered.row);
 		}
-		// console.groupEnd("full");
 	}
 
 	_partialRedrawOnScrollTopDown(rowNumber) {
 		const diff = rowNumber - this.firstVisibleRowIndex;
 		if (diff === 0) return;
-		// console.groupCollapsed("partial dowm");
-		// console.log("first visible", this.firstVisibleRowIndex);
-		// console.log("current", rowNumber);
 		for (let i = 0; i < diff; i++) {
-			if (this.rowsMap.has(this.firstVisibleRowIndex + i)) {
-				debugger;
-				// console.log(`Yes ${this.firstVisibleRowIndex + i}`);
-				const rows = this.rowsMap.get(this.firstVisibleRowIndex + i);
+			const lastRowIndex2BeRemoved = this.firstVisibleRowIndex + i;
+			const newRowIndex = this.firstVisibleRowIndex + this.rowsInViewport + i;
+			if (this.cellsMap.has(lastRowIndex2BeRemoved)) {
+				const rows = this.cellsMap.get(lastRowIndex2BeRemoved);
 				rows.forEach((elem) => elem.remove());
+				this.cellsMap.delete(lastRowIndex2BeRemoved);
 			}
-			// } else {
-			// 	console.log(`No ${this.firstVisibleRowIndex + i}`);
-			// }
-
-			// console.log(this.firstVisibleRowIndex + this.rowsInViewport + i);
-			const rendered = this.renderRow(this.firstVisibleRowIndex + this.rowsInViewport + i);
-			this.rowsMap.set(this.firstVisibleRowIndex + this.rowsInViewport + i, rendered.row);
-			this._addToColumnsMapByRenderedColumns(rendered.renderedColumns);
+			const rendered = this.renderRow(newRowIndex);
+			this.cellsMap.set(newRowIndex, rendered.row);
 		}
-		// console.groupEnd("partial dowm");
 	}
 
 	_partialRedrawOnScrollTopUp(rowNumber) {
-		// console.groupCollapsed("partial up");
-		// console.log("first visible", this.firstVisibleRowIndex);
-		// console.log("current", rowNumber);
 		const diff = Math.abs(this.firstVisibleRowIndex - rowNumber);
-		// console.groupCollapsed("deleted");
+		if (diff === 0) return;
+		const lastRowIndex = this.firstVisibleRowIndex + this.rowsInViewport - 1;
 		for (let i = 0; i < diff; i++) {
-			// for (let j = 0; j < this.columnsCount; j++) {
-
-			if (this.rowsMap.has(this.firstVisibleRowIndex + this.rowsInViewport - 1 - i)) {
-				// console.log(`Yes ${this.firstVisibleRowIndex + this.rowsInViewport - 1 - i}`);
-				const rows = this.rowsMap.get(this.firstVisibleRowIndex + this.rowsInViewport - 1 - i);
+			const lastRowIndex2BeRemoved = lastRowIndex - i;
+			const newRowIndex = rowNumber + i;
+			if (this.cellsMap.has(lastRowIndex2BeRemoved)) {
+				const rows = this.cellsMap.get(lastRowIndex2BeRemoved);
 				rows.forEach((elem) => elem.remove());
+				this.cellsMap.delete(lastRowIndex2BeRemoved);
 			}
-			// } else {
-			// 	console.log(`No ${this.firstVisibleRowIndex + this.rowsInViewport - 1 - i}`);
-			// }
-
-			// this.container.lastChild.remove();
-			// }
-			// console.log(rowNumber + i);
-			const rendered = this.renderRow(rowNumber + i);
-			this.rowsMap.set(rowNumber + i, rendered.row);
+			const rendered = this.renderRow(newRowIndex);
+			this.cellsMap.set(newRowIndex, rendered.row);
 		}
-		// console.groupEnd("deleted");
-		// console.groupEnd("partial up");
 	}
 
 	setScrollTop(scrollTop) {
