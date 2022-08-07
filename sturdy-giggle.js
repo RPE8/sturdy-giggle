@@ -38,20 +38,19 @@ class Sturdy {
 			savedArgs,
 			savedThis;
 
-		function wrapper() {
+		function wrapper(...args) {
 			if (isThrottled) {
-				// (2)
-				savedArgs = arguments;
+				savedArgs = args;
 				savedThis = this;
 				return;
 			}
 
-			func.apply(this, arguments); // (1)
+			func.apply(this, args);
 
 			isThrottled = true;
 
 			setTimeout(function () {
-				isThrottled = false; // (3)
+				isThrottled = false;
 				if (savedArgs) {
 					wrapper.apply(savedThis, savedArgs);
 					savedArgs = savedThis = null;
