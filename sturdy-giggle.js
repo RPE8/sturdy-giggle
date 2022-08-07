@@ -41,7 +41,7 @@ class Sturdy {
 		this.scrollLeft = 0;
 	}
 
-	throttleFunction(func, ms) {
+	_throttleFunction(func, ms) {
 		let isThrottled = false,
 			savedArgs,
 			savedThis;
@@ -134,32 +134,14 @@ class Sturdy {
 		container.style.width = totalWidth;
 		container.style.height = this.rowHeight * this.rowCount + "px";
 
-		const throttledScroll = this.throttleFunction(this.onScroll.bind(this), 17);
+		const throttledScroll = this._throttleFunction(this._onScroll.bind(this), 17);
 		container.parentNode.addEventListener("scroll", throttledScroll);
 
-		this.setScrollLeft(0);
-		this.setScrollTop(0);
-
-		// const columnsToRender = [];
-		// let freeWidth = this.containerWidth;
-		// for (let i = 0; i < this.columns.length; i++) {
-		// 	if (freeWidth > 0) {
-		// 		columnsToRender.push(this.columns[i]);
-		// 		freeWidth -= this.columns[i].width;
-		// 	} else {
-		// 		break;
-		// 	}
-		// }
-
-		// for (let i = 0; i < this.rowsInViewport + this.treshold; i++) {
-		// 	const rendered = this.renderRow(i, columnsToRender);
-		// 	this.cellsMap.set(i, rendered.row);
-		// }
-
-		// console.table(this.cellsMap);
+		this._setScrollLeft(0);
+		this._setScrollTop(0);
 	}
 
-	onScroll(event) {
+	_onScroll(event) {
 		const newTopScroll = event.target.scrollTop;
 		if (newTopScroll !== this.scrollTop) {
 			this.setScrollTop(newTopScroll);
@@ -220,7 +202,7 @@ class Sturdy {
 		}
 	}
 
-	setScrollTop(scrollTop) {
+	_setScrollTop(scrollTop) {
 		const rowNumber = this.calcRowNumberByScrollTop(scrollTop);
 		if (
 			rowNumber >= this.firstVisibleRowIndex + this.rowsInViewport ||
@@ -246,7 +228,7 @@ class Sturdy {
 		// }
 	}
 
-	setScrollLeft(scrollLeft) {
+	_setScrollLeft(scrollLeft) {
 		if (scrollLeft >= this.currentRenderedArea[1] || scrollLeft + this.containerWidth <= this.currentRenderedArea[0]) {
 			console.log("full hor");
 			this._fullRedrawOnScrollLeft(scrollLeft);
