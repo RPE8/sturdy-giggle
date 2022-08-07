@@ -40,33 +40,54 @@ class SturdyColumnsGenerator {
 		}
 
 		for (let i = 0; i < this.columnsCount; i++) {
+			let nested = [];
+			let totalWidth = 0;
+			for (let j = 0; j < 7; j++) {
+				totalWidth += 120;
+				nested.push(
+					new SturdyColumn({
+						dataAccessor,
+						classAccessor,
+						inlineStyleAccessor,
+						attributeAccessor,
+						key: i,
+						width: 120,
+						widthUnits: "px",
+						renderer: ({ rowIndex, columnIndex }) => {
+							let element;
+							// if (rowIndex % 2 === 0 && columnIndex % 2 === 0) {
+							// 	element = document.createElement("input");
+							// 	element.value = dataAccessor({ rowIndex, columnIndex });
+							// } else {
+							element = document.createElement("div");
+							element.textContent = dataAccessor({ rowIndex, columnIndex });
+							// }
+
+							const classes = classAccessor({ rowIndex, columnIndex });
+							element.classList.add(...classes);
+							return element;
+						},
+					})
+				);
+			}
 			columns.push(
 				new SturdyColumn({
-					dataAccessor,
-					classAccessor,
-					inlineStyleAccessor,
-					attributeAccessor,
+					nested: nested,
 					key: i,
-					width: 120,
+					width: totalWidth,
 					widthUnits: "px",
-					renderer: ({ rowIndex, columnIndex }) => {
-						let element;
-						// if (rowIndex % 2 === 0 && columnIndex % 2 === 0) {
-						// 	element = document.createElement("input");
-						// 	element.value = dataAccessor({ rowIndex, columnIndex });
-						// } else {
-						element = document.createElement("div");
-						element.textContent = dataAccessor({ rowIndex, columnIndex });
-						// }
+					renderer: function ({ rowIndex, columnIndex }) {
+						let elements = [];
+						this.nested.forEach((column, i) => {
+							elements.push(column.renderer({ rowIndex, columnIndex: i }));
+						});
 
-						const classes = classAccessor({ rowIndex, columnIndex });
-						element.classList.add(...classes);
-						return element;
+						return elements;
 					},
 				})
 			);
 		}
-
+		console.log(columns);
 		return columns;
 	}
 }

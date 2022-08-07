@@ -2,7 +2,7 @@ import Sturdy from "./sturdy-giggle.js";
 import SturdyDataGenerator from "./sturdy-data-generator.js";
 
 const rowsCount = 1000;
-const columnsCount = 60;
+const columnsCount = 20;
 
 const data = new SturdyDataGenerator({ rowsCount, columnsCount }).generateData();
 
@@ -20,7 +20,7 @@ const sturdy = new Sturdy({
 		if (inlineStyle) cellContainer.setAttribute("style", inlineStyle);
 
 		const content = column.renderer({ columnIndex, rowIndex });
-		cellContainer.append(content);
+		cellContainer.append(...content);
 		return cellContainer;
 	},
 });

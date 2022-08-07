@@ -1,5 +1,15 @@
 class SturdyColumn {
-	constructor({ dataAccessor, classAccessor, inlineStyleAccessor, attributesAccessor, renderer, key, width, widthUnits } = {}) {
+	constructor({
+		dataAccessor,
+		classAccessor,
+		inlineStyleAccessor,
+		attributesAccessor,
+		renderer,
+		key,
+		width,
+		widthUnits,
+		nested,
+	} = {}) {
 		this.dataAccessor = dataAccessor;
 		this.classAccessor = classAccessor;
 		this.inlineStyleAccessor = inlineStyleAccessor;
@@ -8,6 +18,7 @@ class SturdyColumn {
 		this.key = key;
 		this._width = width;
 		this._widthUnits = widthUnits;
+		this.nested = nested;
 	}
 
 	get width() {
