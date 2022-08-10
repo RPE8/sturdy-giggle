@@ -28,9 +28,9 @@ class Sturdy {
 		this.columnsCount = this.columns.length;
 
 		this.firstVisibleRowIndex = 0;
-		this.columnRenderingTolerance = 400;
-		this.columnRenderingStartPoint = 100;
-		this.currentRenderedArea = [0, 0];
+		this.columnRenderingTolerance = 100;
+		this.currentRenderedHorizontalArea = [0, 0];
+		this.currentRenderedColumns = [];
 
 		this.cellsMap = new Map();
 		this.renderedColumnsMap = new Map();
@@ -116,11 +116,11 @@ class Sturdy {
 		container.style.width = totalWidth + "px";
 		container.style.height = this.rowHeight * this.rowCount + "px";
 
-		const throttledScroll = this._throttleFunction(this._onScroll.bind(this), 17);
+		const throttledScroll = this._throttleFunction(this._onScroll.bind(this), 0);
 		container.parentNode.addEventListener("scroll", throttledScroll);
 
 		this.setScrollHorizontally(0);
-		this.setScrollVertically(0);
+		// this.setScrollVertically(0);
 	}
 
 	_onScroll(event) {
@@ -142,10 +142,10 @@ class Sturdy {
 	}
 
 	_fullRedrawOnScrollVertically(rowNumber) {
-		this._clearOnFullredraw();
-		const rowsUpTo = rowNumber + this.zeroBasedRowsInViewport;
+		this._clearOnVerticalFullredraw();
+		const rowsUpTo = rowNumber + this.zeroBasedRowsInViewport + 1;
 		for (let i = rowNumber; i < rowsUpTo; i++) {
-			const rendered = this.renderRow(i);
+			const rendered = this.renderRow(i, this.currentRenderedColumns);
 			this.cellsMap.set(i, rendered.row);
 		}
 	}
@@ -161,8 +161,10 @@ class Sturdy {
 				rows.forEach((elem) => elem.remove());
 				this.cellsMap.delete(lastRowIndex2BeRemoved);
 			}
-			const rendered = this.renderRow(newRowIndex);
-			this.cellsMap.set(newRowIndex, rendered.row);
+			const rendered = this.renderRow(newRowIndex, this.currentRenderedColumns);
+			if (rendered.row) {
+				this.cellsMap.set(newRowIndex, rendered.row);
+			}
 		}
 	}
 
@@ -178,8 +180,10 @@ class Sturdy {
 				rows.forEach((elem) => elem.remove());
 				this.cellsMap.delete(lastRowIndex2BeRemoved);
 			}
-			const rendered = this.renderRow(newRowIndex);
-			this.cellsMap.set(newRowIndex, rendered.row);
+			const rendered = this.renderRow(newRowIndex, this.currentRenderedColumns);
+			if (rendered.row) {
+				this.cellsMap.set(newRowIndex, rendered.row);
+			}
 		}
 	}
 
@@ -210,22 +214,30 @@ class Sturdy {
 	}
 
 	setScrollHorizontally(scrollLeft) {
-		if (scrollLeft >= this.currentRenderedArea[1] || scrollLeft <= this.currentRenderedArea[0]) {
+		if (scrollLeft >= this.currentRenderedHorizontalArea[1] || scrollLeft <= this.currentRenderedHorizontalArea[0]) {
 			console.log("full hor");
 			this._fullRedrawOnScrollHorizontally(scrollLeft);
-		} else if (scrollLeft < this.scrollLeft && (scrollLeft - this.currentRenderedArea[0]) <= this.columnRenderingStartPoint) {
+		} else if (scrollLeft < this.scrollLeft && (scrollLeft - this.currentRenderedHorizontalArea[0]) <= this.columnRenderingTolerance) {
 			console.log("left hor");
-			this._fullRedrawOnScrollHorizontally(scrollLeft);
+			// this._fullRedrawOnScrollHorizontally(scrollLeft);
 			// return;
-			// this._partialRedrawOnScrollLeft(scrollLeft);
-		} else if (scrollLeft > this.scrollLeft && (this.currentRenderedArea[1] - (scrollLeft + this.containerWidth))  <= this.columnRenderingStartPoint) {
+			this._partialRedrawOnScrollHorizontallyLeft(scrollLeft);
+		} else if (scrollLeft > this.scrollLeft && (this.currentRenderedHorizontalArea[1] - (scrollLeft + this.containerWidth))  <= this.columnRenderingTolerance) {
 			console.log("right hor");
-			this._fullRedrawOnScrollHorizontally(scrollLeft);
+			this._fullRedrawOnScrollHorizontallyRight(scrollLeft);
 			// return;
 			// this._partialRedrawOnScrollRight(scrollLeft);
 		}
 
 		this.scrollLeft = scrollLeft;
+	}
+
+	_partialRedrawOnScrollHorizontallyLeft(scrollLeft) {
+		this._fullRedrawOnScrollHorizontally(scrollLeft);
+	}
+
+	_fullRedrawOnScrollHorizontallyRight(scrollLeft) {
+		this._fullRedrawOnScrollHorizontally(scrollLeft);
 	}
 
 	_findColumnByScrollLeft(scrollLeft) {
@@ -242,15 +254,21 @@ class Sturdy {
 		}
 	}
 
-	_clearOnFullredraw() {
+	_clearOnHorizontalFullredraw() {
+		this.cellsMap = new Map();
+		this.renderedColumnsMap = new Map();
+		this.container.replaceChildren();
+		this.currentRenderedColumns = [];
+	}
+
+	_clearOnVerticalFullredraw() {
 		this.cellsMap = new Map();
 		this.renderedColumnsMap = new Map();
 		this.container.replaceChildren();
 	}
 
 	_fullRedrawOnScrollHorizontally(scrollLeft) {
-		console.log(scrollLeft);
-		this._clearOnFullredraw();
+		this._clearOnHorizontalFullredraw();
 		const columnsLength = this.columnRenderingInfo.length; 
 		let columns2Rendered = [];
 
@@ -263,7 +281,6 @@ class Sturdy {
 			columns2Rendered.push(this.columnRenderingInfo[i]);
 		}
 
-		
 		columns2Rendered.push(startColumn);
 	
 		// Additional column to the right
@@ -273,10 +290,11 @@ class Sturdy {
 			columns2Rendered.push(this.columnRenderingInfo[i]);
 		}
 
-		this.currentRenderedArea[1] = columns2Rendered[columns2Rendered.length - 1].end;
-		this.currentRenderedArea[0] = columns2Rendered[0].start;
+		this.currentRenderedHorizontalArea[1] = columns2Rendered[columns2Rendered.length - 1].end;
+		this.currentRenderedHorizontalArea[0] = columns2Rendered[0].start;
 
 		columns2Rendered.forEach((column) => {
+			this.currentRenderedColumns.push(column);
 			const rendered = this.renderColumn(column);
 			for (let i = 0; i < this.zeroBasedRowsInViewport; i++) {
 				const rowIndex = (i + this.firstVisibleRowIndex);
@@ -285,7 +303,6 @@ class Sturdy {
 				} else {
 					this.cellsMap.set(rowIndex, [rendered.column[i]]);
 				}
-				
 			}
 		});
 
@@ -320,16 +337,17 @@ class Sturdy {
 		if (rowIndex < 0 || rowIndex >= this.rowCount) {
 			return;
 		}
-		const columns = columnsToRender || this.columns;
-		let leftPadding = this.currentLeft;
+		const columns = columnsToRender;
+		
 		let topPadding = this.rowHeight * rowIndex;
 		let row = [];
 		columns.forEach((column, columnIndex) => {
-			let inlineStyle = `height:${this.rowHeight}px;max-width:${column.width}px ;left: ${leftPadding}${column.widthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
-			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column, inlineStyle });
+			let leftPadding = column.start;
+			const columnProps = column.column;
+			let inlineStyle = `height:${this.rowHeight}px;max-width:${columnProps.width}px ;left: ${leftPadding}${columnProps.widthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
+			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column: columnProps, inlineStyle });
 
 			row.push(renderedCell);
-			leftPadding += column.width;
 		});
 
 		this.container.append(...row);
