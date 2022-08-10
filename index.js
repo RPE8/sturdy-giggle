@@ -2,7 +2,7 @@ import Sturdy from "./sturdy-giggle.js";
 import SturdyDataGenerator from "./sturdy-data-generator.js";
 
 const rowsCount = 1000;
-const columnsCount = 20;
+const columnsCount = 100;
 
 const data = new SturdyDataGenerator({ rowsCount, columnsCount }).generateData();
 

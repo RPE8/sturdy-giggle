@@ -1,0 +1,3 @@
+function drawTable(aColumn) {
+	// ...
+}
