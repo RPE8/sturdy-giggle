@@ -116,28 +116,31 @@ class Sturdy {
 		container.style.width = totalWidth + "px";
 		container.style.height = this.rowHeight * this.rowCount + "px";
 
-		const throttledScroll = this._throttleFunction(this._onScroll.bind(this), 17);
-		container.parentNode.addEventListener("scroll", throttledScroll);
+		container.parentNode.addEventListener("scroll", this._throttleFunction(this._onScroll.bind(this), 17));
 
 		this.setScrollHorizontally(0);
-		// this.setScrollVertically(0);
 	}
 
 	_onScroll(event) {
 		const newTopScroll = event.target.scrollTop;
-		let requestAnimation;
 		if (newTopScroll !== this.scrollTop) {
-			requestAnimation = window.requestAnimationFrame(this.setScrollVertically(newTopScroll));
-			window.cancelAnimationFrame(requestAnimation);
+			this._callByAnimationFrame(this.setScrollVertically.bind(this, newTopScroll));
 			return;
 		}
 
 		const newLeftScroll = event.target.scrollLeft;
 		if (newLeftScroll !== this.scrollLeft) {
-			requestAnimation = window.requestAnimationFrame(this.setScrollHorizontally(newLeftScroll));
-			window.cancelAnimationFrame(requestAnimation);
+			this._callByAnimationFrame(this.setScrollHorizontally.bind(this, newLeftScroll));
 			return;
 		}
+	}
+
+	_callByAnimationFrame(func) {
+		// I don't know the reason why, but requestAnimationFrame takes function as an argument
+		// But passing function decrease performance and brings flickering while scrolling
+		// When use in such manner - everything is OK. I don't know why...
+		const animation = window.requestAnimationFrame(func());
+		window.cancelAnimationFrame(animation);
 	}
 
 	calcRowNumberByScrollTop(scrollTop) {
