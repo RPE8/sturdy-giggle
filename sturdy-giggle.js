@@ -14,14 +14,8 @@ class Sturdy {
 
 		this.totalRowsHeight = this.rowCount * this.rowHeight;
 
-		this.treshold = 0;
-		this.rowsTreshold = 0;
-		this.columnsTreshold = 1;
-
 		this.rowsInViewport = Math.floor(this.containerHeight / this.rowHeight);
 		this.zeroBasedRowsInViewport = this.rowsInViewport - 1;
-
-		this.tresholdPadding = this.treshold * this.rowHeight;
 
 		this.cellRenderer = cellRenderer;
 		this.columns = columns;
@@ -114,7 +108,7 @@ class Sturdy {
 		this.firstVisibleRowIndex = 0;
 
 		container.style.width = totalWidth + "px";
-		container.style.height = this.rowHeight * this.rowCount + "px";
+		container.style.height = this.totalRowsHeight + "px";
 
 		container.parentNode.addEventListener("scroll", this._throttleFunction(this._onScroll.bind(this), 0));
 
@@ -227,24 +221,17 @@ class Sturdy {
 
 	setScrollHorizontally(scrollLeft) {
 		if (scrollLeft >= this.currentRenderedHorizontalArea[1] || scrollLeft <= this.currentRenderedHorizontalArea[0]) {
-			console.log("full hor");
 			this._fullRedrawOnScrollHorizontally(scrollLeft);
 		} else if (
 			scrollLeft < this.scrollLeft &&
 			scrollLeft - this.currentRenderedHorizontalArea[0] <= this.columnRenderingTolerance
 		) {
-			console.log("left hor");
-			// this._fullRedrawOnScrollHorizontally(scrollLeft);
-			// return;
 			this._partialRedrawOnScrollHorizontallyLeft(scrollLeft);
 		} else if (
 			scrollLeft > this.scrollLeft &&
 			this.currentRenderedHorizontalArea[1] - (scrollLeft + this.containerWidth) <= this.columnRenderingTolerance
 		) {
-			console.log("right hor");
 			this._partialRedrawOnScrollHorizontallyRight(scrollLeft);
-			// return;
-			// this._partialRedrawOnScrollRight(scrollLeft);
 		}
 
 		this.scrollLeft = scrollLeft;
@@ -310,6 +297,7 @@ class Sturdy {
 
 		this.currentRenderedHorizontalArea[1] = columns2Rendered[columns2Rendered.length - 1].end;
 		this.currentRenderedHorizontalArea[0] = columns2Rendered[0].start;
+
 		const fragment = document.createDocumentFragment();
 		columns2Rendered.forEach((column) => {
 			this.currentRenderedColumns.push(column);
@@ -329,25 +317,11 @@ class Sturdy {
 	}
 
 	renderColumn(column) {
-		const columnWidth = column.column.width;
-		const columnWidthUnits = column.column.widthUnits;
-		const columnIndex = column.index;
-		const leftPadding = column.start;
-
-		let renderedColumn = [];
-		for (let i = 0; i < this.zeroBasedRowsInViewport; i++) {
-			const rowIndex = i + this.firstVisibleRowIndex;
-			let topPadding = this.rowHeight * rowIndex;
-
-			let inlineStyle = `height:${this.rowHeight}px;max-width:${columnWidth}px ;left: ${leftPadding}${columnWidthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
-			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column: column.column, inlineStyle });
-
-			renderedColumn.push(renderedCell);
-		}
+		const { column: renderedColumn } = this.createColumn(column);
 
 		this.container.append(...renderedColumn);
 
-		return { column: renderedColumn };
+		return { renderedColumn };
 	}
 
 	createColumn(column) {
@@ -361,8 +335,13 @@ class Sturdy {
 			const rowIndex = i + this.firstVisibleRowIndex;
 			let topPadding = this.rowHeight * rowIndex;
 
-			let inlineStyle = `height:${this.rowHeight}px;max-width:${columnWidth}px ;left: ${leftPadding}${columnWidthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
-			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column: column.column, inlineStyle });
+			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column: column.column });
+
+			renderedCell.style.height = `${this.rowHeight}px`;
+			renderedCell.style.maxWidth = `${columnWidth}px`;
+			renderedCell.style.position = `absolute`;
+			renderedCell.style.left = `${leftPadding}${columnWidthUnits}`;
+			renderedCell.style.top = `${topPadding}px`;
 
 			renderedColumn.push(renderedCell);
 		}
@@ -381,31 +360,24 @@ class Sturdy {
 		columns.forEach((column, columnIndex) => {
 			let leftPadding = column.start;
 			const columnProps = column.column;
-			let inlineStyle = `height:${this.rowHeight}px;max-width:${columnProps.width}px ;left: ${leftPadding}${columnProps.widthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
-			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column: columnProps, inlineStyle });
+			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column: columnProps });
+
+			renderedCell.style.height = `${this.rowHeight}px`;
+			renderedCell.style.maxWidth = `${columnProps.width}px`;
+			// renderedCell.style.position = `absolute`;
+			// renderedCell.style.transform = `translate(${leftPadding}${columnProps.widthUnits},${topPadding}px)`;
+			renderedCell.style.position = `absolute`;
+			renderedCell.style.left = `${leftPadding}${columnProps.widthUnits}`;
+			renderedCell.style.top = `${topPadding}px`;
 
 			row.push(renderedCell);
 		});
 
 		return { row };
 	}
-	// bLast - last element in Dom or first
+
 	renderRow(rowIndex, columnsToRender) {
-		if (rowIndex < 0 || rowIndex >= this.rowCount) {
-			return;
-		}
-		const columns = columnsToRender;
-
-		let topPadding = this.rowHeight * rowIndex;
-		let row = [];
-		columns.forEach((column, columnIndex) => {
-			let leftPadding = column.start;
-			const columnProps = column.column;
-			let inlineStyle = `height:${this.rowHeight}px;max-width:${columnProps.width}px ;left: ${leftPadding}${columnProps.widthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
-			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column: columnProps, inlineStyle });
-
-			row.push(renderedCell);
-		});
+		const { row } = this.createRow(rowIndex, columnsToRender);
 
 		this.container.append(...row);
 
