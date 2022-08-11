@@ -78,7 +78,7 @@ class Sturdy {
 				start: totalWidth,
 				end: totalWidth + curr.width,
 				column: curr,
-				index: i
+				index: i,
 			};
 			totalWidth += curr.width;
 			acc.push(obj);
@@ -116,7 +116,7 @@ class Sturdy {
 		container.style.width = totalWidth + "px";
 		container.style.height = this.rowHeight * this.rowCount + "px";
 
-		container.parentNode.addEventListener("scroll", this._throttleFunction(this._onScroll.bind(this), 17));
+		container.parentNode.addEventListener("scroll", this._throttleFunction(this._onScroll.bind(this), 0));
 
 		this.setScrollHorizontally(0);
 	}
@@ -124,23 +124,15 @@ class Sturdy {
 	_onScroll(event) {
 		const newTopScroll = event.target.scrollTop;
 		if (newTopScroll !== this.scrollTop) {
-			this._callByAnimationFrame(this.setScrollVertically.bind(this, newTopScroll));
+			this.setScrollVertically(newTopScroll);
 			return;
 		}
 
 		const newLeftScroll = event.target.scrollLeft;
 		if (newLeftScroll !== this.scrollLeft) {
-			this._callByAnimationFrame(this.setScrollHorizontally.bind(this, newLeftScroll));
+			this.setScrollHorizontally(newLeftScroll);
 			return;
 		}
-	}
-
-	_callByAnimationFrame(func) {
-		// I don't know the reason why, but requestAnimationFrame takes function as an argument
-		// But passing function decrease performance and brings flickering while scrolling
-		// When use in such manner - everything is OK. I don't know why...
-		const animation = window.requestAnimationFrame(func());
-		window.cancelAnimationFrame(animation);
 	}
 
 	calcRowNumberByScrollTop(scrollTop) {
@@ -162,45 +154,59 @@ class Sturdy {
 	_partialRedrawOnScrollDown(rowNumber) {
 		const diff = rowNumber - this.firstVisibleRowIndex;
 		if (diff === 0) return;
+
 		const fragment = document.createDocumentFragment();
+
 		for (let i = 0; i < diff; i++) {
-			const lastRowIndex2BeRemoved = this.firstVisibleRowIndex + i;
+			const rowIndex2BeRemoved = this.firstVisibleRowIndex + i;
 			const newRowIndex = this.firstVisibleRowIndex + this.zeroBasedRowsInViewport + i;
-			if (this.cellsMap.has(lastRowIndex2BeRemoved)) {
-				const rows = this.cellsMap.get(lastRowIndex2BeRemoved);
-				rows.forEach((elem) => elem.remove());
-				this.cellsMap.delete(lastRowIndex2BeRemoved);
-			}
-			const rendered = this.createRow(newRowIndex, this.currentRenderedColumns);
-			fragment.append(...rendered.row);
-			if (rendered.row) {
-				this.cellsMap.set(newRowIndex, rendered.row);
-			}
+
+			this._removeRowByIndex(rowIndex2BeRemoved);
+
+			this._createAndAppendRow(newRowIndex, this.currentRenderedColumns, fragment);
 		}
+
 		this.container.append(fragment);
 	}
 
 	_partialRedrawOnScrollUp(rowNumber) {
 		const diff = Math.abs(this.firstVisibleRowIndex - rowNumber);
 		if (diff === 0) return;
-		const lastRowIndex = this.firstVisibleRowIndex + this.zeroBasedRowsInViewport;
+
+		const rowIndex = this.firstVisibleRowIndex + this.zeroBasedRowsInViewport;
+
 		const fragment = document.createDocumentFragment();
 		for (let i = 0; i < diff; i++) {
-			const lastRowIndex2BeRemoved = lastRowIndex - i;
+			const rowIndex2BeRemoved = rowIndex - i;
 			const newRowIndex = rowNumber + i;
-			if (this.cellsMap.has(lastRowIndex2BeRemoved)) {
-				const rows = this.cellsMap.get(lastRowIndex2BeRemoved);
-				rows.forEach((elem) => elem.remove());
-				this.cellsMap.delete(lastRowIndex2BeRemoved);
-			}
-			const rendered = this.createRow(newRowIndex, this.currentRenderedColumns);
-			
-			fragment.append(...rendered.row);
-			if (rendered.row) {
-				this.cellsMap.set(newRowIndex, rendered.row);
-			}
+
+			this._removeRowByIndex(rowIndex2BeRemoved);
+
+			this._createAndAppendRow(newRowIndex, this.currentRenderedColumns, fragment);
 		}
 		this.container.append(fragment);
+	}
+
+	_removeRowByIndex(rowIndex) {
+		const rows = this.cellsMap.get(rowIndex);
+
+		if (!rows) {
+			return;
+		}
+
+		rows.forEach((elem) => elem.remove());
+		this.cellsMap.delete(rowIndex);
+	}
+
+	_createAndAppendRow(rowIndex, columns, target) {
+		const rendered = this.createRow(rowIndex, columns);
+
+		if (!rendered?.row) {
+			return;
+		}
+
+		target.append(...rendered.row);
+		this.cellsMap.set(rowIndex, rendered.row);
 	}
 
 	setScrollVertically(scrollTop) {
@@ -223,12 +229,18 @@ class Sturdy {
 		if (scrollLeft >= this.currentRenderedHorizontalArea[1] || scrollLeft <= this.currentRenderedHorizontalArea[0]) {
 			console.log("full hor");
 			this._fullRedrawOnScrollHorizontally(scrollLeft);
-		} else if (scrollLeft < this.scrollLeft && (scrollLeft - this.currentRenderedHorizontalArea[0]) <= this.columnRenderingTolerance) {
+		} else if (
+			scrollLeft < this.scrollLeft &&
+			scrollLeft - this.currentRenderedHorizontalArea[0] <= this.columnRenderingTolerance
+		) {
 			console.log("left hor");
 			// this._fullRedrawOnScrollHorizontally(scrollLeft);
 			// return;
 			this._partialRedrawOnScrollHorizontallyLeft(scrollLeft);
-		} else if (scrollLeft > this.scrollLeft && (this.currentRenderedHorizontalArea[1] - (scrollLeft + this.containerWidth))  <= this.columnRenderingTolerance) {
+		} else if (
+			scrollLeft > this.scrollLeft &&
+			this.currentRenderedHorizontalArea[1] - (scrollLeft + this.containerWidth) <= this.columnRenderingTolerance
+		) {
 			console.log("right hor");
 			this._partialRedrawOnScrollHorizontallyRight(scrollLeft);
 			// return;
@@ -247,14 +259,14 @@ class Sturdy {
 	}
 
 	_findColumnByScrollLeft(scrollLeft) {
-		const columnsLength = this.columnRenderingInfo.length; 
+		const columnsLength = this.columnRenderingInfo.length;
 		for (let i = 1, prev = this.columnRenderingInfo?.[0]; i < columnsLength; i++) {
 			const curr = this.columnRenderingInfo[i];
 			if (prev.start <= scrollLeft && scrollLeft < curr.start) {
 				return {
 					startColumnIndex: i - 1,
-					startColumn: prev
-				}
+					startColumn: prev,
+				};
 			}
 			prev = curr;
 		}
@@ -275,24 +287,24 @@ class Sturdy {
 
 	_fullRedrawOnScrollHorizontally(scrollLeft) {
 		this._clearOnHorizontalFullredraw();
-		const columnsLength = this.columnRenderingInfo.length; 
+		const columnsLength = this.columnRenderingInfo.length;
 		let columns2Rendered = [];
 
-		let {startColumn, startColumnIndex} = this._findColumnByScrollLeft(scrollLeft);
+		let { startColumn, startColumnIndex } = this._findColumnByScrollLeft(scrollLeft);
 
 		// Additional column to the left
 		let freeSpaceToLeft = this.columnRenderingTolerance - Math.abs(startColumn.start - scrollLeft);
 		for (let i = startColumnIndex - 1; i >= 0 && freeSpaceToLeft > 0; i--) {
-			freeSpaceToLeft -= (this.columnRenderingInfo[i].end  - this.columnRenderingInfo[i].start)
+			freeSpaceToLeft -= this.columnRenderingInfo[i].end - this.columnRenderingInfo[i].start;
 			columns2Rendered.push(this.columnRenderingInfo[i]);
 		}
 
 		columns2Rendered.push(startColumn);
-	
+
 		// Additional column to the right
 		let freeSpaceToRight = this.containerWidth - (startColumn.start - scrollLeft);
-		for (let i = startColumnIndex + 1; i < columnsLength && freeSpaceToRight > (-this.columnRenderingTolerance); i++) {
-			freeSpaceToRight -= (this.columnRenderingInfo[i].end  - this.columnRenderingInfo[i].start)
+		for (let i = startColumnIndex + 1; i < columnsLength && freeSpaceToRight > -this.columnRenderingTolerance; i++) {
+			freeSpaceToRight -= this.columnRenderingInfo[i].end - this.columnRenderingInfo[i].start;
 			columns2Rendered.push(this.columnRenderingInfo[i]);
 		}
 
@@ -304,9 +316,9 @@ class Sturdy {
 			const rendered = this.createColumn(column);
 			fragment.append(...rendered.column);
 			for (let i = 0; i < this.zeroBasedRowsInViewport; i++) {
-				const rowIndex = (i + this.firstVisibleRowIndex);
+				const rowIndex = i + this.firstVisibleRowIndex;
 				if (this.cellsMap.has(rowIndex)) {
-					this.cellsMap.set(rowIndex, [...(this.cellsMap.get(rowIndex)), rendered.column[i]]);
+					this.cellsMap.set(rowIndex, [...this.cellsMap.get(rowIndex), rendered.column[i]]);
 				} else {
 					this.cellsMap.set(rowIndex, [rendered.column[i]]);
 				}
@@ -324,7 +336,7 @@ class Sturdy {
 
 		let renderedColumn = [];
 		for (let i = 0; i < this.zeroBasedRowsInViewport; i++) {
-			const rowIndex = (i + this.firstVisibleRowIndex);
+			const rowIndex = i + this.firstVisibleRowIndex;
 			let topPadding = this.rowHeight * rowIndex;
 
 			let inlineStyle = `height:${this.rowHeight}px;max-width:${columnWidth}px ;left: ${leftPadding}${columnWidthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
@@ -332,7 +344,6 @@ class Sturdy {
 
 			renderedColumn.push(renderedCell);
 		}
-
 
 		this.container.append(...renderedColumn);
 
@@ -347,7 +358,7 @@ class Sturdy {
 
 		let renderedColumn = [];
 		for (let i = 0; i < this.zeroBasedRowsInViewport; i++) {
-			const rowIndex = (i + this.firstVisibleRowIndex);
+			const rowIndex = i + this.firstVisibleRowIndex;
 			let topPadding = this.rowHeight * rowIndex;
 
 			let inlineStyle = `height:${this.rowHeight}px;max-width:${columnWidth}px ;left: ${leftPadding}${columnWidthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
@@ -364,7 +375,7 @@ class Sturdy {
 			return;
 		}
 		const columns = columnsToRender;
-		
+
 		let topPadding = this.rowHeight * rowIndex;
 		let row = [];
 		columns.forEach((column, columnIndex) => {
@@ -384,7 +395,7 @@ class Sturdy {
 			return;
 		}
 		const columns = columnsToRender;
-		
+
 		let topPadding = this.rowHeight * rowIndex;
 		let row = [];
 		columns.forEach((column, columnIndex) => {
