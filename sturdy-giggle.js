@@ -116,7 +116,7 @@ class Sturdy {
 		container.style.width = totalWidth + "px";
 		container.style.height = this.rowHeight * this.rowCount + "px";
 
-		const throttledScroll = this._throttleFunction(this._onScroll.bind(this), 0);
+		const throttledScroll = this._throttleFunction(this._onScroll.bind(this), 17);
 		container.parentNode.addEventListener("scroll", throttledScroll);
 
 		this.setScrollHorizontally(0);
@@ -125,14 +125,17 @@ class Sturdy {
 
 	_onScroll(event) {
 		const newTopScroll = event.target.scrollTop;
+		let requestAnimation;
 		if (newTopScroll !== this.scrollTop) {
-			this.setScrollVertically(newTopScroll);
+			requestAnimation = window.requestAnimationFrame(this.setScrollVertically(newTopScroll));
+			window.cancelAnimationFrame(requestAnimation);
 			return;
 		}
 
 		const newLeftScroll = event.target.scrollLeft;
 		if (newLeftScroll !== this.scrollLeft) {
-			this.setScrollHorizontally(newLeftScroll);
+			requestAnimation = window.requestAnimationFrame(this.setScrollHorizontally(newLeftScroll));
+			window.cancelAnimationFrame(requestAnimation);
 			return;
 		}
 	}
@@ -144,15 +147,19 @@ class Sturdy {
 	_fullRedrawOnScrollVertically(rowNumber) {
 		this._clearOnVerticalFullredraw();
 		const rowsUpTo = rowNumber + this.zeroBasedRowsInViewport + 1;
+		const fragment = document.createDocumentFragment();
 		for (let i = rowNumber; i < rowsUpTo; i++) {
-			const rendered = this.renderRow(i, this.currentRenderedColumns);
+			const rendered = this.createRow(i, this.currentRenderedColumns);
+			fragment.append(...rendered.row);
 			this.cellsMap.set(i, rendered.row);
 		}
+		this.container.append(fragment);
 	}
 
 	_partialRedrawOnScrollDown(rowNumber) {
 		const diff = rowNumber - this.firstVisibleRowIndex;
 		if (diff === 0) return;
+		const fragment = document.createDocumentFragment();
 		for (let i = 0; i < diff; i++) {
 			const lastRowIndex2BeRemoved = this.firstVisibleRowIndex + i;
 			const newRowIndex = this.firstVisibleRowIndex + this.zeroBasedRowsInViewport + i;
@@ -161,17 +168,20 @@ class Sturdy {
 				rows.forEach((elem) => elem.remove());
 				this.cellsMap.delete(lastRowIndex2BeRemoved);
 			}
-			const rendered = this.renderRow(newRowIndex, this.currentRenderedColumns);
+			const rendered = this.createRow(newRowIndex, this.currentRenderedColumns);
+			fragment.append(...rendered.row);
 			if (rendered.row) {
 				this.cellsMap.set(newRowIndex, rendered.row);
 			}
 		}
+		this.container.append(fragment);
 	}
 
 	_partialRedrawOnScrollUp(rowNumber) {
 		const diff = Math.abs(this.firstVisibleRowIndex - rowNumber);
 		if (diff === 0) return;
 		const lastRowIndex = this.firstVisibleRowIndex + this.zeroBasedRowsInViewport;
+		const fragment = document.createDocumentFragment();
 		for (let i = 0; i < diff; i++) {
 			const lastRowIndex2BeRemoved = lastRowIndex - i;
 			const newRowIndex = rowNumber + i;
@@ -180,11 +190,14 @@ class Sturdy {
 				rows.forEach((elem) => elem.remove());
 				this.cellsMap.delete(lastRowIndex2BeRemoved);
 			}
-			const rendered = this.renderRow(newRowIndex, this.currentRenderedColumns);
+			const rendered = this.createRow(newRowIndex, this.currentRenderedColumns);
+			
+			fragment.append(...rendered.row);
 			if (rendered.row) {
 				this.cellsMap.set(newRowIndex, rendered.row);
 			}
 		}
+		this.container.append(fragment);
 	}
 
 	setScrollVertically(scrollTop) {
@@ -201,16 +214,6 @@ class Sturdy {
 		}
 		this.firstVisibleRowIndex = rowNumber;
 		this.scrollTop = scrollTop;
-		// let obj = {};
-		// document.querySelectorAll(".Input").forEach((elem) => {
-		// 	if (!obj[elem.textContent]) obj[elem.textContent] = 0;
-		// 	obj[elem.textContent]++;
-		// });
-		// for (let [prop, value] of Object.entries(obj)) {
-		// 	if (value && value > 1) {
-		// 		console.error({ prop, value });
-		// 	}
-		// }
 	}
 
 	setScrollHorizontally(scrollLeft) {
@@ -224,7 +227,7 @@ class Sturdy {
 			this._partialRedrawOnScrollHorizontallyLeft(scrollLeft);
 		} else if (scrollLeft > this.scrollLeft && (this.currentRenderedHorizontalArea[1] - (scrollLeft + this.containerWidth))  <= this.columnRenderingTolerance) {
 			console.log("right hor");
-			this._fullRedrawOnScrollHorizontallyRight(scrollLeft);
+			this._partialRedrawOnScrollHorizontallyRight(scrollLeft);
 			// return;
 			// this._partialRedrawOnScrollRight(scrollLeft);
 		}
@@ -236,7 +239,7 @@ class Sturdy {
 		this._fullRedrawOnScrollHorizontally(scrollLeft);
 	}
 
-	_fullRedrawOnScrollHorizontallyRight(scrollLeft) {
+	_partialRedrawOnScrollHorizontallyRight(scrollLeft) {
 		this._fullRedrawOnScrollHorizontally(scrollLeft);
 	}
 
@@ -292,10 +295,11 @@ class Sturdy {
 
 		this.currentRenderedHorizontalArea[1] = columns2Rendered[columns2Rendered.length - 1].end;
 		this.currentRenderedHorizontalArea[0] = columns2Rendered[0].start;
-
+		const fragment = document.createDocumentFragment();
 		columns2Rendered.forEach((column) => {
 			this.currentRenderedColumns.push(column);
-			const rendered = this.renderColumn(column);
+			const rendered = this.createColumn(column);
+			fragment.append(...rendered.column);
 			for (let i = 0; i < this.zeroBasedRowsInViewport; i++) {
 				const rowIndex = (i + this.firstVisibleRowIndex);
 				if (this.cellsMap.has(rowIndex)) {
@@ -305,7 +309,7 @@ class Sturdy {
 				}
 			}
 		});
-
+		this.container.append(fragment);
 		// console.log(this.cellsMap);
 	}
 
@@ -332,6 +336,45 @@ class Sturdy {
 		return { column: renderedColumn };
 	}
 
+	createColumn(column) {
+		const columnWidth = column.column.width;
+		const columnWidthUnits = column.column.widthUnits;
+		const columnIndex = column.index;
+		const leftPadding = column.start;
+
+		let renderedColumn = [];
+		for (let i = 0; i < this.zeroBasedRowsInViewport; i++) {
+			const rowIndex = (i + this.firstVisibleRowIndex);
+			let topPadding = this.rowHeight * rowIndex;
+
+			let inlineStyle = `height:${this.rowHeight}px;max-width:${columnWidth}px ;left: ${leftPadding}${columnWidthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
+			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column: column.column, inlineStyle });
+
+			renderedColumn.push(renderedCell);
+		}
+
+		return { column: renderedColumn };
+	}
+
+	createRow(rowIndex, columnsToRender) {
+		if (rowIndex < 0 || rowIndex >= this.rowCount) {
+			return;
+		}
+		const columns = columnsToRender;
+		
+		let topPadding = this.rowHeight * rowIndex;
+		let row = [];
+		columns.forEach((column, columnIndex) => {
+			let leftPadding = column.start;
+			const columnProps = column.column;
+			let inlineStyle = `height:${this.rowHeight}px;max-width:${columnProps.width}px ;left: ${leftPadding}${columnProps.widthUnits}; top:${topPadding}px; position: absolute; display: flex; justify-content: center; align-items: center;`;
+			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column: columnProps, inlineStyle });
+
+			row.push(renderedCell);
+		});
+
+		return { row };
+	}
 	// bLast - last element in Dom or first
 	renderRow(rowIndex, columnsToRender) {
 		if (rowIndex < 0 || rowIndex >= this.rowCount) {
