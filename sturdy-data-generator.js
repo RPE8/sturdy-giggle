@@ -29,7 +29,7 @@ class SturdyColumnsGenerator {
 			return [{ "data-key": this.key }];
 		};
 
-		let columns = [];
+		let columns = { data: [], headers: [] };
 
 		for (let i = 0; i < this.rowsCount; i++) {
 			let row = [];
@@ -98,7 +98,7 @@ class SturdyColumnsGenerator {
 					})
 				);
 			}
-			columns.push(
+			columns.data.push(
 				new SturdyColumn({
 					nested: nested,
 					key: i,

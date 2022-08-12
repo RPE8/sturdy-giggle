@@ -12,7 +12,7 @@ const sturdy = new Sturdy({
 	tableElement: document.querySelector(".sturdy-table"),
 	rowCount: rowsCount,
 	rowHeight: rowHeight,
-	columns: data,
+	columns: data.data,
 	cellRenderer: ({ columnIndex, rowIndex, key, inlineStyle, classes = ["cell"], column } = {}) => {
 		const cellContainer = document.createElement("div");
 		if (key) cellContainer.setAttribute("data-key", key);
@@ -29,10 +29,10 @@ sturdy.render();
 
 const sturdy2 = (window.sturdy2 = new Sturdy({
 	tableElement: document.querySelector(".sturdy-table2"),
-	rowCount: rowsCount,
+	rowCount: 5,
 	rowHeight: rowHeight,
 	secondary: true,
-	columns: data,
+	columns: data.data,
 	cellRenderer: ({ columnIndex, rowIndex, key, inlineStyle, classes = ["cell"], column } = {}) => {
 		const cellContainer = document.createElement("div");
 		if (key) cellContainer.setAttribute("data-key", key);
