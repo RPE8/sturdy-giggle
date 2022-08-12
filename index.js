@@ -2,14 +2,14 @@ import Sturdy from "./sturdy-giggle.js";
 import SturdyDataGenerator from "./sturdy-data-generator.js";
 
 const rowsCount = 10000;
-const columnsCount = 1000;
+const columnsCount = 100;
 
 const data = new SturdyDataGenerator({ rowsCount, columnsCount }).generateData();
 
-const rowHeight = 50;
+const rowHeight = 25;
 
 const sturdy = new Sturdy({
-	container: document.querySelector(".sturdy-container"),
+	tableElement: document.querySelector(".sturdy-table"),
 	rowCount: rowsCount,
 	rowHeight: rowHeight,
 	columns: data,
@@ -26,3 +26,23 @@ const sturdy = new Sturdy({
 });
 
 sturdy.render();
+
+const sturdy2 = (window.sturdy2 = new Sturdy({
+	tableElement: document.querySelector(".sturdy-table2"),
+	rowCount: rowsCount,
+	rowHeight: rowHeight,
+	secondary: true,
+	columns: data,
+	cellRenderer: ({ columnIndex, rowIndex, key, inlineStyle, classes = ["cell"], column } = {}) => {
+		const cellContainer = document.createElement("div");
+		if (key) cellContainer.setAttribute("data-key", key);
+		if (classes) cellContainer.classList.add(...classes);
+		if (inlineStyle) cellContainer.setAttribute("style", inlineStyle);
+
+		const content = column.renderer({ columnIndex, rowIndex });
+		cellContainer.append(...content);
+		return cellContainer;
+	},
+}));
+
+sturdy2.render();

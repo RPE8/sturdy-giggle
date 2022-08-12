@@ -5,17 +5,17 @@
 //  			clear vars on render
 
 class Sturdy {
-	constructor({ container, rowHeight, rowCount, columnsCount, cellRenderer, columns } = {}) {
-		this.container = container;
-		this.containerHeight = container.offsetHeight;
-		this.containerWidth = container.offsetWidth;
+	constructor({ tableElement, rowHeight, rowCount, cellRenderer, columns, height, width, secondary } = {}) {
+		this.table = tableElement;
+		this.parentContainer = tableElement.parentNode;
+		this.height = height;
+		this.width = width;
 		this.rowHeight = rowHeight;
 		this.rowCount = rowCount;
+		this.secondary = Boolean(secondary);
 
-		this.totalRowsHeight = this.rowCount * this.rowHeight;
-
-		this.rowsInViewport = Math.floor(this.containerHeight / this.rowHeight);
-		this.zeroBasedRowsInViewport = this.rowsInViewport - 1;
+		this.visibleRows = 0;
+		this.zeroBasedVisibleRows = 0;
 
 		this.cellRenderer = cellRenderer;
 		this.columns = columns;
@@ -23,6 +23,7 @@ class Sturdy {
 
 		this.firstVisibleRowIndex = 0;
 		this.columnRenderingTolerance = 100;
+		this.currentRenderedVerticalArea = [0, 0];
 		this.currentRenderedHorizontalArea = [0, 0];
 		this.currentRenderedColumns = [];
 
@@ -35,6 +36,22 @@ class Sturdy {
 
 		this.scrollTop = 0;
 		this.scrollLeft = 0;
+	}
+
+	calculateProps() {
+		this.totalRowsHeight = this.rowCount * this.rowHeight;
+		this.height = this.totalRowsHeight;
+		this.visibleRows = Math.floor(this.parentContainer.offsetHeight / this.rowHeight);
+		this.zeroBasedVisibleRows = this.visibleRows - 1;
+		const { renderingInfo, renderingInfoMap, renderingInfoKeys, totalWidth } = this.computeColumnsRenderInfo(
+			this.columns
+		);
+		this.columnRenderingInfo = renderingInfo;
+		this.columnRenderingInfoMap = renderingInfoMap;
+		this.columnRenderingInfoKeys = renderingInfoKeys;
+		this.totalColumnsWidth = totalWidth;
+		this.width = totalWidth;
+		this.parentWidth = this.parentContainer.offsetWidth;
 	}
 
 	_throttleFunction(func, ms) {
@@ -95,28 +112,22 @@ class Sturdy {
 	}
 
 	render() {
-		const container = this.container;
-		const { renderingInfo, renderingInfoMap, renderingInfoKeys, totalWidth } = this.computeColumnsRenderInfo(
-			this.columns
-		);
-		this.columnRenderingInfo = renderingInfo;
-		this.columnRenderingInfoMap = renderingInfoMap;
-		this.columnRenderingInfoKeys = renderingInfoKeys;
-		this.totalColumnsWidth = totalWidth;
+		const table = this.table;
+
+		this.calculateProps();
+
+		table.style.width = `${this.width}px`;
+		table.style.height = `${this.height}px`;
 
 		this.cellsMap = new Map();
 		this.firstVisibleRowIndex = 0;
-
-		container.style.width = totalWidth + "px";
-		container.style.height = this.totalRowsHeight + "px";
-
-		container.parentNode.addEventListener("scroll", this._throttleFunction(this._onScroll.bind(this), 0));
-
+		this.parentContainer.addEventListener("scroll", this._throttleFunction(this._onScroll.bind(this), 0));
 		this.setScrollHorizontally(0);
 	}
 
 	_onScroll(event) {
 		const newTopScroll = event.target.scrollTop;
+		console.log(this.table);
 		if (newTopScroll !== this.scrollTop) {
 			this.setScrollVertically(newTopScroll);
 			return;
@@ -125,6 +136,10 @@ class Sturdy {
 		const newLeftScroll = event.target.scrollLeft;
 		if (newLeftScroll !== this.scrollLeft) {
 			this.setScrollHorizontally(newLeftScroll);
+			if (this.table !== document.querySelector(".sturdy-table2")) {
+				// .scrollTo(this.scrollLeft, this.scrollTop);
+				document.querySelector(".sturdy-container-2").scrollTo(this.scrollLeft, this.scrollTop);
+			}
 			return;
 		}
 	}
@@ -135,14 +150,14 @@ class Sturdy {
 
 	_fullRedrawOnScrollVertically(rowNumber) {
 		this._clearOnVerticalFullredraw();
-		const rowsUpTo = rowNumber + this.zeroBasedRowsInViewport + 1;
+		const rowsUpTo = rowNumber + this.zeroBasedVisibleRows + 1;
 		const fragment = document.createDocumentFragment();
 		for (let i = rowNumber; i < rowsUpTo; i++) {
 			const rendered = this.createRow(i, this.currentRenderedColumns);
 			fragment.append(...rendered.row);
 			this.cellsMap.set(i, rendered.row);
 		}
-		this.container.append(fragment);
+		this.table.append(fragment);
 	}
 
 	_partialRedrawOnScrollDown(rowNumber) {
@@ -153,21 +168,21 @@ class Sturdy {
 
 		for (let i = 0; i < diff; i++) {
 			const rowIndex2BeRemoved = this.firstVisibleRowIndex + i;
-			const newRowIndex = this.firstVisibleRowIndex + this.zeroBasedRowsInViewport + i;
+			const newRowIndex = this.firstVisibleRowIndex + this.zeroBasedVisibleRows + i;
 
 			this._removeRowByIndex(rowIndex2BeRemoved);
 
 			this._createAndAppendRow(newRowIndex, this.currentRenderedColumns, fragment);
 		}
 
-		this.container.append(fragment);
+		this.table.append(fragment);
 	}
 
 	_partialRedrawOnScrollUp(rowNumber) {
 		const diff = Math.abs(this.firstVisibleRowIndex - rowNumber);
 		if (diff === 0) return;
 
-		const rowIndex = this.firstVisibleRowIndex + this.zeroBasedRowsInViewport;
+		const rowIndex = this.firstVisibleRowIndex + this.zeroBasedVisibleRows;
 
 		const fragment = document.createDocumentFragment();
 		for (let i = 0; i < diff; i++) {
@@ -178,7 +193,7 @@ class Sturdy {
 
 			this._createAndAppendRow(newRowIndex, this.currentRenderedColumns, fragment);
 		}
-		this.container.append(fragment);
+		this.table.append(fragment);
 	}
 
 	_removeRowByIndex(rowIndex) {
@@ -206,8 +221,8 @@ class Sturdy {
 	setScrollVertically(scrollTop) {
 		const rowNumber = this.calcRowNumberByScrollTop(scrollTop);
 		if (
-			rowNumber >= this.firstVisibleRowIndex + this.zeroBasedRowsInViewport ||
-			rowNumber <= this.firstVisibleRowIndex - this.zeroBasedRowsInViewport
+			rowNumber >= this.firstVisibleRowIndex + this.zeroBasedVisibleRows ||
+			rowNumber <= this.firstVisibleRowIndex - this.zeroBasedVisibleRows
 		) {
 			this._fullRedrawOnScrollVertically(rowNumber);
 		} else if (rowNumber > this.firstVisibleRowIndex) {
@@ -229,7 +244,7 @@ class Sturdy {
 			this._partialRedrawOnScrollHorizontallyLeft(scrollLeft);
 		} else if (
 			scrollLeft > this.scrollLeft &&
-			this.currentRenderedHorizontalArea[1] - (scrollLeft + this.containerWidth) <= this.columnRenderingTolerance
+			this.currentRenderedHorizontalArea[1] - (scrollLeft + this.parentWidth) <= this.columnRenderingTolerance
 		) {
 			this._partialRedrawOnScrollHorizontallyRight(scrollLeft);
 		}
@@ -262,14 +277,14 @@ class Sturdy {
 	_clearOnHorizontalFullredraw() {
 		this.cellsMap = new Map();
 		this.renderedColumnsMap = new Map();
-		this.container.replaceChildren();
+		this.table.replaceChildren();
 		this.currentRenderedColumns = [];
 	}
 
 	_clearOnVerticalFullredraw() {
 		this.cellsMap = new Map();
 		this.renderedColumnsMap = new Map();
-		this.container.replaceChildren();
+		this.table.replaceChildren();
 	}
 
 	_fullRedrawOnScrollHorizontally(scrollLeft) {
@@ -289,7 +304,7 @@ class Sturdy {
 		columns2Rendered.push(startColumn);
 
 		// Additional column to the right
-		let freeSpaceToRight = this.containerWidth - (startColumn.start - scrollLeft);
+		let freeSpaceToRight = this.parentWidth - (startColumn.start - scrollLeft);
 		for (let i = startColumnIndex + 1; i < columnsLength && freeSpaceToRight > -this.columnRenderingTolerance; i++) {
 			freeSpaceToRight -= this.columnRenderingInfo[i].end - this.columnRenderingInfo[i].start;
 			columns2Rendered.push(this.columnRenderingInfo[i]);
@@ -303,7 +318,7 @@ class Sturdy {
 			this.currentRenderedColumns.push(column);
 			const rendered = this.createColumn(column);
 			fragment.append(...rendered.column);
-			for (let i = 0; i < this.zeroBasedRowsInViewport; i++) {
+			for (let i = 0; i < this.zeroBasedVisibleRows; i++) {
 				const rowIndex = i + this.firstVisibleRowIndex;
 				if (this.cellsMap.has(rowIndex)) {
 					this.cellsMap.set(rowIndex, [...this.cellsMap.get(rowIndex), rendered.column[i]]);
@@ -312,14 +327,14 @@ class Sturdy {
 				}
 			}
 		});
-		this.container.append(fragment);
+		this.table.append(fragment);
 		// console.log(this.cellsMap);
 	}
 
 	renderColumn(column) {
 		const { column: renderedColumn } = this.createColumn(column);
 
-		this.container.append(...renderedColumn);
+		this.table.append(...renderedColumn);
 
 		return { renderedColumn };
 	}
@@ -331,7 +346,7 @@ class Sturdy {
 		const leftPadding = column.start;
 
 		let renderedColumn = [];
-		for (let i = 0; i < this.zeroBasedRowsInViewport; i++) {
+		for (let i = 0; i < this.zeroBasedVisibleRows; i++) {
 			const rowIndex = i + this.firstVisibleRowIndex;
 			let topPadding = this.rowHeight * rowIndex;
 
@@ -379,7 +394,7 @@ class Sturdy {
 	renderRow(rowIndex, columnsToRender) {
 		const { row } = this.createRow(rowIndex, columnsToRender);
 
-		this.container.append(...row);
+		this.table.append(...row);
 
 		return { row };
 	}

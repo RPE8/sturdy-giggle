@@ -43,13 +43,13 @@ class SturdyColumnsGenerator {
 			let nested = [];
 			let totalWidth = 0;
 			const classAccessor = function ({ rowIndex, columnIndex }) {
-				let classes = [];
+				let classes = ["Input"];
 
-				if (columnIndex % 2 === 0) {
-					classes = [...classes, ...["Even-Column", "Input"]];
-				} else {
-					classes = [...classes, ...["Odd-Column", "Input"]];
-				}
+				// if (columnIndex % 2 === 0) {
+				// 	classes = [...classes, ...["Even-Column", "Input"]];
+				// } else {
+				// 	classes = [...classes, ...["Odd-Column", "Input"]];
+				// }
 
 				if (rowIndex % 2 === 0) {
 					classes.push("Even-Row");
@@ -71,13 +71,24 @@ class SturdyColumnsGenerator {
 						width: 120,
 						widthUnits: "px",
 						renderer: ({ rowIndex, columnIndex, mainColumnIndex }) => {
-							let element;
+							const element = document.createElement("div");
 							// if (rowIndex % 2 === 0 && columnIndex % 2 === 0) {
 							// 	element = document.createElement("input");
 							// 	element.value = dataAccessor({ rowIndex, columnIndex });
 							// } else {
-							element = document.createElement("div");
-							element.textContent = dataAccessor({ rowIndex, columnIndex, mainColumnIndex });
+							const span = document.createElement("span");
+							span.textContent = dataAccessor({ rowIndex, columnIndex, mainColumnIndex });
+							// element.textContent = ;
+							element.append(span);
+							element.addEventListener("click", function () {
+								console.log(rowIndex, columnIndex, mainColumnIndex);
+								const input = document.createElement("input");
+								input.value = dataAccessor({ rowIndex, columnIndex, mainColumnIndex });
+								input.classList.add(...classes);
+								element.textContent = "";
+								element.append(input);
+							});
+
 							// }
 
 							const classes = classAccessor({ rowIndex, columnIndex });
