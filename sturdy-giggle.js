@@ -127,7 +127,6 @@ class Sturdy {
 
 	_onScroll(event) {
 		const newTopScroll = event.target.scrollTop;
-		console.log(this.table);
 		if (newTopScroll !== this.scrollTop) {
 			this.setScrollVertically(newTopScroll);
 			return;
@@ -375,7 +374,7 @@ class Sturdy {
 		columns.forEach((column, columnIndex) => {
 			let leftPadding = column.start;
 			const columnProps = column.column;
-			const renderedCell = this.cellRenderer({ rowIndex, columnIndex, column: columnProps });
+			const renderedCell = this.cellRenderer({ rowIndex, columnIndex: column.index, column: columnProps });
 
 			renderedCell.style.height = `${this.rowHeight}px`;
 			renderedCell.style.maxWidth = `${columnProps.width}px`;
