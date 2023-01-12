@@ -1,10 +1,16 @@
 import Sturdy from "./sturdy-giggle.js";
 import SturdyDataGenerator from "./sturdy-data-generator.js";
+import SturdyColumnTemplates from "./sturdy-column-templates.js";
 
 const rowsCount = 10000;
 const columnsCount = 100;
 
 const data = new SturdyDataGenerator({ rowsCount, columnsCount }).generateData();
+const templates = new SturdyColumnTemplates();
+templates.generateFullWeek1Template({
+	startDate: new Date(),
+	endDate: new Date(new Date().setDate(new Date().getDate() + 118)),
+});
 
 const rowHeight = 25;
 
