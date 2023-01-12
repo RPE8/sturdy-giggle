@@ -7,10 +7,16 @@ const columnsCount = 100;
 
 const data = new SturdyDataGenerator({ rowsCount, columnsCount }).generateData();
 const templates = new SturdyColumnTemplates();
-templates.generateFullWeek1Template({
+const templates2 = new SturdyColumnTemplates();
+const headers = [ ...templates.generateFullWeek1Template({
+	columnName: "Weird Data",
 	startDate: new Date(),
-	endDate: new Date(new Date().setDate(new Date().getDate() + 118)),
-});
+	endDate: new Date(new Date().setDate(new Date().getDate() + 13)),
+}), ...templates2.generateFullWeek1Template({
+	columnName: "Fancy data",
+	startDate: new Date(),
+	endDate: new Date(new Date().setDate(new Date().getDate() + 20)),
+})];
 
 const rowHeight = 25;
 
@@ -33,12 +39,14 @@ const sturdy = new Sturdy({
 
 sturdy.render();
 
+console.log(headers);
+
 const sturdy2 = (window.sturdy2 = new Sturdy({
 	tableElement: document.querySelector(".sturdy-table2"),
 	rowCount: 5,
 	rowHeight: rowHeight,
 	secondary: true,
-	columns: data.headers,
+	columns: headers,
 	cellRenderer: ({ columnIndex, rowIndex, key, inlineStyle, classes = ["cell"], column } = {}) => {
 		const cellContainer = document.createElement("div");
 		if (key) cellContainer.setAttribute("data-key", key);
