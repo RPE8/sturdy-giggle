@@ -32,7 +32,7 @@ const sturdy2 = (window.sturdy2 = new Sturdy({
 	rowCount: 5,
 	rowHeight: rowHeight,
 	secondary: true,
-	columns: data.data,
+	columns: data.headers,
 	cellRenderer: ({ columnIndex, rowIndex, key, inlineStyle, classes = ["cell"], column } = {}) => {
 		const cellContainer = document.createElement("div");
 		if (key) cellContainer.setAttribute("data-key", key);
